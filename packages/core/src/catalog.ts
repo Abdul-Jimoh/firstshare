@@ -1,5 +1,5 @@
 import type { W3Client } from "./binance/client.ts";
-import { BSC, publicRwaListings, rwaTokens } from "./binance/api.ts";
+import { BSC, publicRwaListings, rwaPrices, rwaTokens } from "./binance/api.ts";
 import type { MarketStatusInfo, PlatformId, PublicRwaListing, RwaToken } from "./binance/types.ts";
 
 export interface StockToken {
@@ -10,12 +10,14 @@ export interface StockToken {
   sharesPerToken: number;
   logoUrl: string | null;
   status: MarketStatusInfo | null;
+  price: number | null;
   source: "api" | "public";
 }
 
 export interface Stock {
   ticker: string;
   name: string;
+  logoUrl: string | null;
   tokens: StockToken[];
 }
 
@@ -30,6 +32,7 @@ function fromApi(t: RwaToken): StockToken {
     sharesPerToken: Number(t.tokenToShareRatio),
     logoUrl: t.tokenLogoUrl,
     status: t.statusInfo,
+    price: Number(t.tokenPrice) || null,
     source: "api",
   };
 }
@@ -43,6 +46,7 @@ function fromPublic(l: PublicRwaListing, platform: PlatformId): StockToken {
     sharesPerToken: Number(l.multiplier),
     logoUrl: null,
     status: null,
+    price: null,
     source: "public",
   };
 }
@@ -58,7 +62,7 @@ export function mergeCatalog(
     if (seen.has(token.address)) return;
     seen.add(token.address);
     const key = ticker.toUpperCase();
-    const stock = stocks.get(key) ?? { ticker: key, name: name ?? key, tokens: [] };
+    const stock = stocks.get(key) ?? { ticker: key, name: name ?? key, logoUrl: null, tokens: [] };
     if (name && stock.name === key) stock.name = name;
     stock.tokens.push(token);
     stocks.set(key, stock);
@@ -75,6 +79,7 @@ export function mergeCatalog(
 
   for (const stock of stocks.values()) {
     stock.tokens.sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform));
+    stock.logoUrl = stock.tokens.find((t) => t.logoUrl)?.logoUrl ?? null;
   }
   return [...stocks.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
 }
@@ -85,13 +90,36 @@ export async function loadCatalog(client: W3Client): Promise<Stock[]> {
     publicRwaListings("bstock"),
     publicRwaListings("ondo"),
   ]);
-  return mergeCatalog(api, { bstock, ondo });
+  const stocks = mergeCatalog(api, { bstock, ondo });
+  const missing = stocks.flatMap((s) => s.tokens).filter((t) => t.price === null);
+  if (missing.length) {
+    const prices = new Map((await rwaPrices(client, missing.map((t) => t.address))).map((p) => [p.tokenContractAddress.toLowerCase(), Number(p.tokenPrice)]));
+    for (const t of missing) t.price = prices.get(t.address) || null;
+  }
+  return stocks;
 }
+
+const ALIASES: Record<string, string> = {
+  "s&p": "SPY",
+  "s&p 500": "SPY",
+  "sp500": "SPY",
+  "sp 500": "SPY",
+  "nasdaq": "QQQ",
+  "nasdaq 100": "QQQ",
+  "google": "GOOGL",
+  "alphabet": "GOOGL",
+  "facebook": "META",
+  "gold": "GLD",
+  "silver": "SLV",
+  "bitcoin etf": "IBIT",
+};
 
 export function searchCatalog(stocks: Stock[], query: string, limit = 10): Stock[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
+  const alias = ALIASES[q];
   const score = (s: Stock) => {
+    if (s.ticker === alias) return -1;
     const ticker = s.ticker.toLowerCase();
     const name = s.name.toLowerCase();
     if (ticker === q) return 0;

@@ -73,4 +73,16 @@ describe("mergeCatalog", () => {
     expect(searchCatalog(stocks, "nvdab")[0]!.ticker).toBe("NVDA");
     expect(searchCatalog(stocks, "zzz")).toEqual([]);
   });
+
+  it("maps everyday names to the fund people mean", () => {
+    const withSpy = mergeCatalog(
+      [
+        apiToken({ platformId: "ondo", tokenSymbol: "SPGIon", tokenContractAddress: "0x5961", underlyingTicker: "SPGI", underlyingName: "S&P Global Inc." }),
+        apiToken({ platformId: "ondo", tokenSymbol: "SPYon", tokenContractAddress: "0x5970", underlyingTicker: "SPY", underlyingName: "SPDR S&P 500 ETF Trust" }),
+      ],
+      {},
+    );
+    expect(searchCatalog(withSpy, "S&P")[0]!.ticker).toBe("SPY");
+    expect(searchCatalog(withSpy, "s&p 500")[0]!.ticker).toBe("SPY");
+  });
 });
