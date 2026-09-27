@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatShares, formatUsd } from "@/lib/format";
 import { displayName, type StockSummary } from "@/lib/stock";
-import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
+import { gsap, reducedMotion, useGSAP, whenVisible } from "./motion/gsap";
 import { StockLogo } from "./stock";
 
 const PRESETS = [1, 5, 20, 100, 500];
@@ -20,40 +20,51 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
   const shares = stock?.price ? amount / stock.price : 0;
   const whole = Math.floor(shares);
   const part = shares - whole;
-  const last = useRef({ part: 0, shares: 0 });
+  const visible = useRef(false);
+  const latest = useRef({ part, shares });
+  latest.current = { part, shares };
+
+  const animate = useRef<{ offset: gsap.QuickToFunc; count: (n: number) => void } | null>(null);
 
   useGSAP(
-    () => {
-      const from = last.current;
-      last.current = { part, shares };
-      if (reducedMotion()) {
-        gsap.set(slice.current, { strokeDashoffset: ARC * (1 - part) });
-        return;
-      }
-      gsap.fromTo(
-        slice.current,
-        { strokeDashoffset: ARC * (1 - from.part) },
-        { strokeDashoffset: ARC * (1 - part), duration: 0.9, ease: "power3.out" },
-      );
-      const counter = { n: from.shares };
-      gsap.to(counter, {
-        n: shares,
-        duration: 0.9,
-        ease: "power3.out",
-        onUpdate: () => {
-          if (shown.current) shown.current.textContent = formatShares(counter.n);
-        },
+    (_, contextSafe) => {
+      const el = slice.current!;
+      if (reducedMotion()) return;
+      const counter = { n: 0 };
+      const render = () => {
+        if (shown.current) shown.current.textContent = formatShares(counter.n);
+      };
+      animate.current = {
+        offset: gsap.quickTo(el, "strokeDashoffset", { duration: 1.1, ease: "expo.out" }),
+        count: contextSafe!((n: number) => {
+          gsap.to(counter, { n, duration: 1.1, ease: "expo.out", overwrite: true, onUpdate: render });
+        }),
+      };
+      return whenVisible(el, () => {
+        visible.current = true;
+        animate.current?.offset(ARC * (1 - latest.current.part));
+        animate.current?.count(latest.current.shares);
       });
     },
-    { dependencies: [part, shares] },
+    { dependencies: [] },
   );
+
+  useEffect(() => {
+    if (!animate.current) {
+      slice.current?.setAttribute("stroke-dashoffset", String(ARC * (1 - part)));
+      return;
+    }
+    if (!visible.current) return;
+    animate.current.offset(ARC * (1 - part));
+    animate.current.count(shares);
+  }, [part, shares]);
 
   const pct = useMemo(() => (part * 100 < 1 ? (part * 100).toFixed(2) : (part * 100).toFixed(1)), [part]);
   if (!stock) return null;
 
   return (
-    <div className={`grid items-center gap-10 ${compact ? "" : "lg:grid-cols-[1fr_1.1fr] lg:gap-16"}`}>
-      <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-[11rem]" : "max-w-[22rem]"}`}>
+    <div className={`grid items-center gap-8 sm:gap-10 ${compact ? "" : "lg:grid-cols-2 lg:gap-16"}`}>
+      <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-44" : "max-w-64 sm:max-w-88"}`}>
         <svg viewBox="0 0 120 120" className="size-full -rotate-90">
           <circle cx="60" cy="60" r="56" fill="var(--color-surface)" stroke="var(--color-line)" strokeWidth="1" />
           <circle
@@ -97,13 +108,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
           </div>
         )}
 
-        <p
-          className={
-            compact
-              ? "text-2xl font-medium leading-tight tracking-[-0.02em]"
-              : "mt-10 text-[clamp(1.6rem,3.4vw,2.6rem)] font-medium leading-[1.1] tracking-[-0.03em]"
-          }
-        >
+        <p className={compact ? "text-2xl font-medium leading-tight tracking-tight" : "mt-8 text-lead font-medium sm:mt-10"}>
           {formatUsd(amount)} buys you <span ref={shown}>{formatShares(shares)}</span>
           <span className="text-muted">
             {" "}
@@ -118,7 +123,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
           One share costs {formatUsd(stock.price)}.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-2">
+        <div className="mt-6 flex flex-wrap items-center gap-2 sm:mt-8">
           {(compact ? PRESETS.slice(0, 4) : PRESETS).map((p) => (
             <button
               key={p}
@@ -137,7 +142,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
           aria-label="Amount in dollars"
-          className="mt-6 w-full accent-[var(--color-ink)]"
+          className="mt-6 w-full accent-ink"
         />
       </div>
     </div>

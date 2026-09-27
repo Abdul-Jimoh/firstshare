@@ -12,26 +12,8 @@ import { TickerTape } from "@/components/ticker-tape";
 import { getCatalog, pickStocks } from "@/lib/data";
 import { COLLECTIONS, summarize } from "@/lib/stock";
 
-const TAPE = [
-  "AAPL",
-  "NVDA",
-  "TSLA",
-  "AMZN",
-  "MSFT",
-  "GOOGL",
-  "META",
-  "NFLX",
-  "SPY",
-  "QQQ",
-  "AMD",
-  "AVGO",
-  "TSM",
-  "COIN",
-  "PLTR",
-  "MU",
-  "ORCL",
-  "IBM",
-];
+// prettier-ignore
+const TAPE = ["AAPL", "NVDA", "TSLA", "AMZN", "MSFT", "GOOGL", "META", "NFLX", "SPY", "QQQ", "AMD", "AVGO", "TSM", "COIN", "PLTR", "MU", "ORCL", "IBM"];
 const SLICE = ["AAPL", "NVDA", "TSLA", "SPY", "AMZN", "NFLX"];
 
 export default async function Home() {
@@ -45,17 +27,22 @@ export default async function Home() {
 
   return (
     <>
-      <section className="pb-16 pt-12 text-center sm:pt-20">
+      <section className="pb-12 pt-8 text-center sm:pb-16 sm:pt-20">
         <HeroHeadline />
         <Reveal delay={0.5} y={16}>
-          <p className="mx-auto mt-8 max-w-xl text-lg text-muted">
+          <p className="mx-auto mt-6 max-w-xl text-base text-muted sm:mt-8 sm:text-lg">
             Real US stocks, held in your own wallet. We tell you what you&apos;re buying and whether now is a fair price, in plain English.
           </p>
         </Reveal>
-        <Reveal delay={0.65} y={16} className="relative z-20 mt-10 flex justify-center">
+        <Reveal delay={0.65} y={16} className="relative z-20 mt-8 flex justify-center sm:mt-10">
           <HeroSearch />
         </Reveal>
-        <Reveal delay={0.8} y={16} stagger={0.1} className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-6 text-left sm:gap-10">
+        <Reveal
+          delay={0.8}
+          y={16}
+          stagger={0.1}
+          className="mx-auto mt-10 grid max-w-3xl divide-y divide-line overflow-hidden rounded-card border border-line bg-surface text-left sm:mt-16 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:text-center"
+        >
           <Stat value={<CountUp value={catalog.length} />} label="companies and funds" />
           <Stat value="$1" label="smallest buy" />
           <Stat value={<CountUp value={allDay} />} label="trade 24/7, even on weekends" />
@@ -64,25 +51,25 @@ export default async function Home() {
 
       <TickerTape items={tape.map(summarize)} />
 
-      <Reveal className="mt-16">
+      <Reveal className="mt-12 sm:mt-16">
         <MarketClock initialNow={new Date().toISOString()} />
       </Reveal>
 
-      <section className="mt-32">
-        <SplitHeading className="max-w-3xl text-[clamp(2.25rem,5.5vw,4rem)] font-medium leading-[1] tracking-[-0.04em]">
+      <section className="mt-20 sm:mt-32">
+        <SplitHeading className="max-w-3xl text-headline font-medium">
           What does $1 actually buy? <span className="text-muted">A real slice.</span>
         </SplitHeading>
-        <Reveal className="mt-12 rounded-card border border-line bg-surface p-6 sm:p-12">
+        <Reveal className="mt-8 rounded-card border border-line bg-surface p-5 sm:mt-12 sm:p-12">
           <SliceCalculator stocks={slice.map(summarize)} />
         </Reveal>
       </section>
 
-      <section className="mt-32 space-y-20">
+      <section className="mt-20 space-y-14 sm:mt-32 sm:space-y-20">
         {COLLECTIONS.map((c, i) => (
           <div key={c.slug}>
-            <div className="mb-8 flex items-end justify-between gap-6">
+            <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
               <div>
-                <SplitHeading className="text-[clamp(1.6rem,3vw,2.25rem)] font-medium tracking-[-0.03em]">{c.title}</SplitHeading>
+                <SplitHeading className="text-subhead font-medium">{c.title}</SplitHeading>
                 <p className="mt-1 text-muted">{c.blurb}</p>
               </div>
               <Link href={`/stocks?c=${c.slug}`} className="group flex shrink-0 items-center gap-1.5 text-sm font-medium">
@@ -90,7 +77,7 @@ export default async function Home() {
                 <Arrow className="size-4 transition group-hover:translate-x-1" />
               </Link>
             </div>
-            <Reveal stagger={0.08} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <Reveal stagger={0.05} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {collections[i]?.map((s) => (
                 <StockCard key={s.ticker} stock={summarize(s)} />
               ))}
@@ -99,11 +86,11 @@ export default async function Home() {
         ))}
       </section>
 
-      <section id="how" className="mt-36 scroll-mt-28">
-        <SplitHeading className="max-w-2xl text-[clamp(2.25rem,5.5vw,4rem)] font-medium leading-[1] tracking-[-0.04em]">
+      <section id="how" className="mt-24 scroll-mt-28 sm:mt-36">
+        <SplitHeading className="max-w-2xl text-headline font-medium">
           Three steps. <span className="text-muted">No jargon.</span>
         </SplitHeading>
-        <Reveal stagger={0.12} className="mt-14 grid gap-4 sm:grid-cols-3">
+        <Reveal stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
           <Step
             n="1"
             title="Pick a company you know"
@@ -122,11 +109,11 @@ export default async function Home() {
         </Reveal>
       </section>
 
-      <section id="trust" className="mt-36 scroll-mt-28">
-        <SplitHeading className="max-w-2xl text-[clamp(2.25rem,5.5vw,4rem)] font-medium leading-[1] tracking-[-0.04em]">
+      <section id="trust" className="mt-24 scroll-mt-28 sm:mt-36">
+        <SplitHeading className="max-w-2xl text-headline font-medium">
           Is it safe? <span className="text-muted">Here&apos;s what&apos;s real.</span>
         </SplitHeading>
-        <Reveal stagger={0.1} className="mt-14 grid gap-4 sm:grid-cols-3">
+        <Reveal stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
           <Trust
             icon={<ShieldIcon />}
             title="Backed by real shares"
@@ -145,12 +132,10 @@ export default async function Home() {
         </Reveal>
       </section>
 
-      <Reveal className="mt-36">
-        <section className="relative overflow-hidden rounded-card bg-ink px-8 py-20 text-center text-white sm:py-28">
-          <Mark className="pointer-events-none absolute -right-16 -top-16 size-72 text-white/[0.06]" />
-          <h2 className="mx-auto max-w-2xl text-[clamp(2.25rem,5.5vw,4rem)] font-medium leading-[1] tracking-[-0.04em]">
-            Your first share is a search away.
-          </h2>
+      <Reveal className="mt-24 sm:mt-36">
+        <section className="relative overflow-hidden rounded-card bg-ink px-6 py-16 text-center text-white sm:px-8 sm:py-28">
+          <Mark className="pointer-events-none absolute -right-16 -top-16 size-72 text-white/6" />
+          <h2 className="mx-auto max-w-2xl text-headline font-medium">Your first share is a search away.</h2>
           <p className="mx-auto mt-5 max-w-md text-white/60">No minimum balance. No account forms. Just a wallet and a dollar.</p>
           <Magnetic className="mt-10 inline-block">
             <Link
@@ -169,21 +154,19 @@ export default async function Home() {
 
 function Stat({ value, label }: { value: React.ReactNode; label: string }) {
   return (
-    <div>
-      <p className="text-[clamp(2.25rem,5vw,3.5rem)] font-medium leading-none tracking-[-0.045em]">{value}</p>
-      <p className="mt-2 text-sm text-muted">{label}</p>
+    <div className="flex items-baseline justify-between gap-4 px-5 py-4 sm:block sm:px-6 sm:py-1">
+      <p className="text-stat font-medium">{value}</p>
+      <p className="text-right text-sm text-muted sm:mt-2 sm:text-center">{label}</p>
     </div>
   );
 }
 
 function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-card border border-line bg-surface p-7 transition duration-500 hover:-translate-y-1 hover:border-ink/15">
-      <span className="absolute -right-3 -top-8 text-[9rem] font-medium leading-none tracking-[-0.06em] text-bg transition duration-500 group-hover:text-line">
-        {n}
-      </span>
+    <div className="group relative overflow-hidden rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-1 hover:border-ink/15 sm:p-7">
+      <span className="absolute -right-3 -top-8 text-numeral font-medium text-bg transition duration-500 group-hover:text-line">{n}</span>
       <p className="relative font-mono text-sm text-muted">Step {n}</p>
-      <h3 className="relative mt-16 text-xl font-medium tracking-tight">{title}</h3>
+      <h3 className="relative mt-10 text-xl font-medium tracking-tight sm:mt-16">{title}</h3>
       <p className="relative mt-2 text-muted">{body}</p>
     </div>
   );
@@ -191,11 +174,11 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
 
 function Trust({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="group rounded-card border border-line bg-surface p-7 transition duration-500 hover:-translate-y-1 hover:border-ink/15">
+    <div className="group rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-1 hover:border-ink/15 sm:p-7">
       <span className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-bg transition duration-500 group-hover:bg-ink group-hover:text-white">
         {icon}
       </span>
-      <h3 className="mt-10 text-xl font-medium tracking-tight">{title}</h3>
+      <h3 className="mt-8 text-xl font-medium tracking-tight sm:mt-10">{title}</h3>
       <p className="mt-2 text-muted">{body}</p>
     </div>
   );

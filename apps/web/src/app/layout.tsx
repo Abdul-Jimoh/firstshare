@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <style>{"[data-animate]{visibility:visible!important}"}</style>
         </noscript>
       </head>
-      <body className="min-h-dvh font-sans">
+      <body className="min-h-dvh font-sans" suppressHydrationWarning>
         <SmoothScroll />
         <SiteHeader />
         <main className="mx-auto max-w-6xl px-5 sm:px-8">{children}</main>

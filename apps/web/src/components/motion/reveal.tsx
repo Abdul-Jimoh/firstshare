@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, reducedMotion, SplitText, useGSAP } from "./gsap";
+import { gsap, reducedMotion, SplitText, useGSAP, whenVisible } from "./gsap";
 
 type RevealProps = {
   children: React.ReactNode;
@@ -11,24 +11,30 @@ type RevealProps = {
   stagger?: number;
 };
 
-export function Reveal({ children, className, y = 28, delay = 0, stagger }: RevealProps) {
+export function Reveal({ children, className, y = 18, delay = 0, stagger }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useGSAP(
-    () => {
+    (_, contextSafe) => {
       const el = ref.current!;
-      if (reducedMotion()) return;
-      const targets = stagger ? Array.from(el.children) : el;
       gsap.set(el, { autoAlpha: 1 });
-      gsap.from(targets, {
-        y,
-        autoAlpha: 0,
-        duration: 0.9,
-        delay,
-        stagger: stagger ?? 0,
-        ease: "power3.out",
-        scrollTrigger: { trigger: el, start: "top 88%", once: true },
-      });
+      if (reducedMotion()) return;
+      const targets = stagger ? Array.from(el.children) : [el];
+      gsap.set(targets, { autoAlpha: 0, y });
+      return whenVisible(
+        el,
+        contextSafe!(() => {
+          gsap.to(targets, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.6,
+            delay,
+            stagger: stagger ?? 0,
+            ease: "power3.out",
+            clearProps: "transform",
+          });
+        }),
+      );
     },
     { scope: ref },
   );
@@ -44,24 +50,26 @@ export function SplitHeading({ children, className, as: Tag = "h2" }: { children
   const ref = useRef<HTMLHeadingElement>(null);
 
   useGSAP(
-    () => {
+    (_, contextSafe) => {
       const el = ref.current!;
+      gsap.set(el, { autoAlpha: 1 });
       if (reducedMotion()) return;
-      SplitText.create(el, {
+      let shown = false;
+      const split = SplitText.create(el, {
         type: "lines",
         mask: "lines",
         autoSplit: true,
         onSplit(self) {
-          gsap.set(el, { autoAlpha: 1 });
-          return gsap.from(self.lines, {
-            yPercent: 110,
-            duration: 1.1,
-            ease: "power4.out",
-            stagger: 0.09,
-            scrollTrigger: { trigger: el, start: "top 88%", once: true },
-          });
+          if (!shown) gsap.set(self.lines, { yPercent: 110 });
         },
       });
+      return whenVisible(
+        el,
+        contextSafe!(() => {
+          shown = true;
+          gsap.to(split.lines, { yPercent: 0, duration: 0.9, ease: "power4.out", stagger: 0.08 });
+        }),
+      );
     },
     { scope: ref },
   );

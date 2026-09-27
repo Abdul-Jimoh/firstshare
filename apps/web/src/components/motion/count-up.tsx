@@ -1,26 +1,30 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, reducedMotion, useGSAP } from "./gsap";
+import { gsap, reducedMotion, useGSAP, whenVisible } from "./gsap";
 
-export function CountUp({ value, prefix = "", duration = 1.6 }: { value: number; prefix?: string; duration?: number }) {
+export function CountUp({ value, prefix = "", duration = 1.4 }: { value: number; prefix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useGSAP(
-    () => {
+    (_, contextSafe) => {
       const el = ref.current!;
       if (reducedMotion()) return;
       const counter = { n: 0 };
-      gsap.to(counter, {
-        n: value,
-        duration,
-        ease: "power2.out",
-        scrollTrigger: { trigger: el, start: "top 92%", once: true },
-        onUpdate: () => {
-          el.textContent = `${prefix}${Math.round(counter.n)}`;
-        },
-      });
       el.textContent = `${prefix}0`;
+      return whenVisible(
+        el,
+        contextSafe!(() => {
+          gsap.to(counter, {
+            n: value,
+            duration,
+            ease: "power2.out",
+            onUpdate: () => {
+              el.textContent = `${prefix}${Math.round(counter.n)}`;
+            },
+          });
+        }),
+      );
     },
     { scope: ref, dependencies: [value] },
   );

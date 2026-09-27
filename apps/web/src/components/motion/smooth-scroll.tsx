@@ -3,7 +3,7 @@
 import Lenis from "lenis";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { gsap, reducedMotion, ScrollTrigger } from "./gsap";
+import { gsap, reducedMotion } from "./gsap";
 
 export function SmoothScroll() {
   const lenis = useRef<Lenis | null>(null);
@@ -13,7 +13,6 @@ export function SmoothScroll() {
     if (reducedMotion()) return;
     const instance = new Lenis({ duration: 1.1, anchors: { offset: -24 } });
     lenis.current = instance;
-    instance.on("scroll", ScrollTrigger.update);
     const tick = (time: number) => instance.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
@@ -24,9 +23,11 @@ export function SmoothScroll() {
     };
   }, []);
 
+  const firstPath = useRef(pathname);
   useEffect(() => {
-    lenis.current?.scrollTo(0, { immediate: true });
-    ScrollTrigger.refresh();
+    if (pathname === firstPath.current) return;
+    firstPath.current = pathname;
+    if (!window.location.hash) lenis.current?.scrollTo(0, { immediate: true });
   }, [pathname]);
 
   return null;

@@ -17,9 +17,7 @@ export default async function Explore({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="pt-8">
-      <h1 className="text-[clamp(2.5rem,7vw,5rem)] font-medium leading-none tracking-[-0.045em]">
-        {collection ? collection.title : "Explore"}
-      </h1>
+      <h1 className="text-title font-medium">{collection ? collection.title : "Explore"}</h1>
       <p className="mt-4 max-w-xl text-lg text-muted">
         {collection ? collection.blurb : "Every company and fund you can own on Firstshare. Start typing a name."}
       </p>
