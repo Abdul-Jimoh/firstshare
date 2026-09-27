@@ -37,10 +37,10 @@ export function HeroHeadline() {
       ref={root}
       data-animate
       aria-label="Own a piece of Apple, Nvidia, Tesla or the S&P 500 from $1"
-      className="mx-auto max-w-5xl text-[clamp(2.9rem,8.5vw,6.75rem)] font-medium leading-none tracking-[-0.05em]"
+      className="mx-auto max-w-5xl text-display font-medium"
     >
       <span aria-hidden className="block overflow-hidden pb-[0.1em]">
-        <span className="hero-line block">Own a piece of</span>
+        <span className="hero-line block whitespace-nowrap">Own a piece of</span>
       </span>
       <span aria-hidden className="block overflow-hidden pb-[0.1em]">
         <span className="hero-line relative block h-[1em]">

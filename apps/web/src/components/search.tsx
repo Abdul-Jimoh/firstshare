@@ -92,7 +92,7 @@ export function HeroSearch() {
 
   return (
     <div className="relative w-full max-w-xl text-left">
-      <div className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 shadow-[0_1px_2px_rgb(15_23_42/0.04),0_12px_32px_-18px_rgb(15_23_42/0.25)] transition focus-within:border-ink/25 focus-within:shadow-[0_0_0_4px_rgb(79_70_229/0.08),0_12px_32px_-18px_rgb(15_23_42/0.3)]">
+      <div className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 shadow-soft transition focus-within:border-ink/25 focus-within:shadow-focus">
         <SearchIcon spinning={loading} />
         <input
           ref={input}
@@ -133,7 +133,7 @@ export function HeroSearch() {
         <div
           id={listId}
           role="listbox"
-          className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-3xl border border-line bg-surface p-2 shadow-[0_24px_60px_-24px_rgb(15_23_42/0.35)]"
+          className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-3xl border border-line bg-surface p-2 shadow-panel"
         >
           {results.length === 0 && !loading && (
             <p className="px-4 py-5 text-sm text-muted">
@@ -192,7 +192,7 @@ export function LiveSearch({ defaultValue }: { defaultValue: string }) {
   }, [q, params, pathname, router]);
 
   return (
-    <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-line bg-surface p-1.5 transition focus-within:border-ink/25 focus-within:shadow-[0_0_0_4px_rgb(79_70_229/0.08)]">
+    <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-line bg-surface p-1.5 transition focus-within:border-ink/25 focus-within:shadow-focus">
       <SearchIcon spinning={pending} />
       <input
         ref={input}

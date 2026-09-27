@@ -15,7 +15,35 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
+  --text-2xs: 0.65rem;
+  --text-display: clamp(2.25rem, 10.5vw, 6.75rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.05em;
+  --text-title: clamp(2.25rem, 6vw, 4.5rem);
+  --text-title--line-height: 1;
+  --text-title--letter-spacing: -0.045em;
+  --text-headline: clamp(2rem, 5.5vw, 4rem);
+  --text-headline--line-height: 1.02;
+  --text-headline--letter-spacing: -0.04em;
+  --text-subhead: clamp(1.5rem, 3vw, 2.25rem);
+  --text-subhead--line-height: 1.1;
+  --text-subhead--letter-spacing: -0.03em;
+  --text-stat: clamp(2rem, 5vw, 3.5rem);
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.045em;
+  --text-lead: clamp(1.6rem, 3.4vw, 2.6rem);
+  --text-lead--line-height: 1.1;
+  --text-lead--letter-spacing: -0.03em;
+  --text-numeral: 9rem;
+  --text-numeral--line-height: 1;
+  --text-numeral--letter-spacing: -0.06em;
+
   --radius-card: 1.5rem;
+
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 32px -18px rgb(15 23 42 / 0.25);
+  --shadow-lift: 0 18px 40px -20px rgb(15 23 42 / 0.25);
+  --shadow-panel: 0 24px 60px -24px rgb(15 23 42 / 0.35);
+  --shadow-focus: 0 0 0 4px rgb(79 70 229 / 0.08);
 }
 
 html {

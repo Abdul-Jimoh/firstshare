@@ -57,7 +57,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 bg-bg/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link href="/" className="group flex items-center gap-2 text-[1.35rem] font-semibold tracking-tight">
+        <Link href="/" className="group flex items-center gap-2 text-xl font-semibold sm:text-2xl tracking-tight">
           <span className="transition duration-500 group-hover:rotate-90">
             <Mark animate />
           </span>
@@ -68,7 +68,7 @@ export function SiteHeader() {
           onMouseLeave={() => gsap.to(pill.current, { autoAlpha: 0, duration: 0.3 })}
           className="relative hidden items-center rounded-full border border-line bg-surface p-1 text-sm sm:flex"
         >
-          <span ref={pill} aria-hidden className="invisible absolute left-0 top-1 h-[calc(100%-0.5rem)] w-0 rounded-full bg-bg" />
+          <span ref={pill} aria-hidden className="invisible absolute inset-y-1 left-0 w-0 rounded-full bg-bg" />
           {NAV.map((item) => (
             <Link
               key={item.href}

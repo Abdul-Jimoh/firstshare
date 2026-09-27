@@ -34,20 +34,20 @@ export default async function StockPage({ params }: Props) {
         <div className="flex items-center gap-5">
           <StockLogo stock={stock} size={68} />
           <div>
-            <h1 className="text-[clamp(2.25rem,5.5vw,3.75rem)] font-medium leading-none tracking-[-0.045em]">{stock.name}</h1>
+            <h1 className="text-headline font-medium">{stock.name}</h1>
             <p className="mt-2 font-mono text-sm text-muted">{stock.ticker}</p>
           </div>
         </div>
         <div className="sm:text-right">
-          <p className="text-[clamp(2.25rem,5.5vw,3.75rem)] font-medium leading-none tracking-[-0.045em]">{formatUsd(pick?.price)}</p>
+          <p className="text-headline font-medium">{formatUsd(pick?.price)}</p>
           <p className="mt-2 text-sm text-muted">per share, on-chain</p>
         </div>
       </Reveal>
 
-      <section className="mt-12 grid items-start gap-4 lg:grid-cols-[1fr_24rem]">
+      <section className="mt-8 grid items-start gap-3 sm:mt-12 sm:gap-4 lg:grid-cols-[1fr_24rem]">
         <div className="flex flex-col gap-4">
           {company?.description && (
-            <Reveal delay={0.05} className="rounded-card border border-line bg-surface p-7">
+            <Reveal delay={0.05} className="rounded-card border border-line bg-surface p-5 sm:p-7">
               <h2 className="text-xl font-medium tracking-tight">What {shortName(stock.name)} does</h2>
               <p className="mt-3 leading-relaxed text-muted">{company.description}</p>
               <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-6 text-sm sm:grid-cols-3">
@@ -71,7 +71,7 @@ export default async function StockPage({ params }: Props) {
               </dl>
             </Reveal>
           )}
-          <Reveal delay={0.1} className="rounded-card border border-line bg-surface p-7">
+          <Reveal delay={0.1} className="rounded-card border border-line bg-surface p-5 sm:p-7">
             <h2 className="text-xl font-medium tracking-tight">Ways to own {stock.name}</h2>
             <p className="mt-1 text-muted">
               {stock.tokens.length > 1
@@ -106,11 +106,11 @@ export default async function StockPage({ params }: Props) {
         </div>
 
         <Reveal delay={0.2} className="flex flex-col gap-4">
-          <div className="rounded-card border border-line bg-surface p-7">
+          <div className="rounded-card border border-line bg-surface p-5 sm:p-7">
             <p className="mb-6 text-sm text-muted">Try an amount</p>
             <SliceCalculator stocks={[summarize(stock)]} compact />
           </div>
-          <div className="rounded-card border border-dashed border-line p-7 text-sm text-muted">
+          <div className="rounded-card border border-dashed border-line p-5 sm:p-7 text-sm text-muted">
             Buying straight from this page arrives next: pick an amount, see our price check, confirm in your wallet.
           </div>
         </Reveal>

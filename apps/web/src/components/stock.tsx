@@ -18,7 +18,7 @@ export function StockLogo({ stock, size = 40 }: { stock: { logoUrl: string | nul
   }
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center rounded-full border border-line bg-bg font-mono text-[0.65rem] font-medium text-muted"
+      className="inline-flex shrink-0 items-center justify-center rounded-full border border-line bg-bg font-mono text-2xs font-medium text-muted"
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -47,10 +47,10 @@ export function StockCard({ stock }: { stock: StockSummary }) {
   return (
     <SpotlightLink
       href={`/stocks/${stock.ticker}`}
-      className="group flex h-full flex-col gap-5 rounded-card border border-line bg-surface p-5 transition duration-300 hover:-translate-y-1 hover:border-ink/15 hover:shadow-[0_18px_40px_-20px_rgb(15_23_42/0.25)]"
+      className="group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-4 sm:gap-5 sm:p-5 transition duration-300 hover:-translate-y-1 hover:border-ink/15 hover:shadow-lift"
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className="transition duration-500 group-hover:rotate-[-8deg] group-hover:scale-110">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="shrink-0 transition duration-500 group-hover:-rotate-8 group-hover:scale-110">
           <StockLogo stock={stock} />
         </span>
         {stock.state && <StatePill state={stock.state} />}
@@ -59,8 +59,8 @@ export function StockCard({ stock }: { stock: StockSummary }) {
         <p className="line-clamp-1 font-medium">{stock.name}</p>
         <p className="mt-0.5 font-mono text-xs text-muted">{stock.ticker}</p>
       </div>
-      <div className="mt-auto flex items-end justify-between">
-        <p className="text-xl font-medium">{formatUsd(stock.price)}</p>
+      <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
+        <p className="text-lg font-medium sm:text-xl">{formatUsd(stock.price)}</p>
         <span className="flex items-center gap-1 text-xs text-muted">
           {stock.from1 && "from $1"}
           <Arrow className="size-3.5 -translate-x-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100" />

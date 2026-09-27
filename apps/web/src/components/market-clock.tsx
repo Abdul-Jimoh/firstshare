@@ -20,7 +20,7 @@ function until(target: Date, now: Date) {
   return `${m}m`;
 }
 
-const localTime = new Intl.DateTimeFormat("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
+const nyTime = new Intl.DateTimeFormat("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 
 export function MarketClock({ initialNow }: { initialNow: string }) {
   const [now, setNow] = useState(() => new Date(initialNow));
@@ -34,39 +34,43 @@ export function MarketClock({ initialNow }: { initialNow: string }) {
   const nyOpen = state.session === "regular";
 
   return (
-    <div className="grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2">
-      <div className="flex items-center justify-between gap-4 bg-surface px-6 py-5">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">New York Stock Exchange</p>
-          <p className="mt-1 flex items-center gap-2 text-lg font-medium">
+    <div className="grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-2">
+      <Panel
+        label="New York Stock Exchange"
+        status={
+          <>
             <Dot on={nyOpen} />
             {SESSION_LABEL[state.session]}
-          </p>
-        </div>
-        <p className="text-right text-sm text-muted">
-          {nyOpen && state.nextClose ? (
-            <>Closes in {until(state.nextClose, now)}</>
-          ) : (
-            <>
-              Opens {localTime.format(state.nextOpen)}
-              <br />
-              in {until(state.nextOpen, now)}
-            </>
-          )}
-        </p>
-      </div>
-      <div className="flex items-center justify-between gap-4 bg-surface px-6 py-5">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">On-chain, on Firstshare</p>
-          <p className="mt-1 flex items-center gap-2 text-lg font-medium">
+          </>
+        }
+        detail={
+          nyOpen && state.nextClose
+            ? `Closes in ${until(state.nextClose, now)}`
+            : `Opens ${nyTime.format(state.nextOpen)} ET, in ${until(state.nextOpen, now)}`
+        }
+      />
+      <Panel
+        label="On-chain, on Firstshare"
+        status={
+          <>
             <Dot on />
             Open 24/7
-          </p>
-        </div>
-        <p className="max-w-[14rem] text-right text-sm text-muted">
-          {nyOpen ? "Prices track New York live." : "Prices can drift from the last New York close. We show you by how much."}
-        </p>
+          </>
+        }
+        detail={nyOpen ? "Prices track New York live." : "Prices can drift from the last New York close. We show you by how much."}
+      />
+    </div>
+  );
+}
+
+function Panel({ label, status, detail }: { label: string; status: React.ReactNode; detail: string }) {
+  return (
+    <div className="flex flex-col gap-2 bg-surface px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+      <div className="shrink-0">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
+        <p className="mt-1 flex items-center gap-2 text-lg font-medium">{status}</p>
       </div>
+      <p className="text-sm text-muted sm:max-w-56 sm:text-right">{detail}</p>
     </div>
   );
 }
