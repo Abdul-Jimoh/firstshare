@@ -4,7 +4,9 @@ import type { PublicRwaListing, RwaToken } from "../src/binance/types.ts";
 
 const status = { openState: true, marketStatus: null, reasonCode: "TRADING", reasonMsg: null, nextOpenTime: null, nextCloseTime: null };
 
-function apiToken(p: Partial<RwaToken> & Pick<RwaToken, "platformId" | "tokenSymbol" | "tokenContractAddress" | "underlyingTicker" | "underlyingName">): RwaToken {
+function apiToken(
+  p: Partial<RwaToken> & Pick<RwaToken, "platformId" | "tokenSymbol" | "tokenContractAddress" | "underlyingTicker" | "underlyingName">,
+): RwaToken {
   return {
     binanceChainId: "56",
     assetType: 1,
@@ -35,10 +37,36 @@ const listing = (symbol: string, ticker: string, contractAddress: string, multip
 
 describe("mergeCatalog", () => {
   const api = [
-    apiToken({ platformId: "ondo", tokenSymbol: "NVDAon", tokenContractAddress: "0xA9EE", underlyingTicker: "NVDA", underlyingName: "Nvidia Corp", tokenToShareRatio: "1.0012" }),
-    apiToken({ platformId: "bstock", tokenSymbol: "NVDAB", tokenContractAddress: "0x02FC", underlyingTicker: "NVDA", underlyingName: "Nvidia Corp" }),
-    apiToken({ platformId: "ondo", tokenSymbol: "AAPLon", tokenContractAddress: "0xAA01", underlyingTicker: "AAPL", underlyingName: "Apple Inc." }),
-    apiToken({ platformId: "ondo", tokenSymbol: "NVDAon", tokenContractAddress: "0xeth", underlyingTicker: "NVDA", underlyingName: "Nvidia Corp", binanceChainId: "1" }),
+    apiToken({
+      platformId: "ondo",
+      tokenSymbol: "NVDAon",
+      tokenContractAddress: "0xA9EE",
+      underlyingTicker: "NVDA",
+      underlyingName: "Nvidia Corp",
+      tokenToShareRatio: "1.0012",
+    }),
+    apiToken({
+      platformId: "bstock",
+      tokenSymbol: "NVDAB",
+      tokenContractAddress: "0x02FC",
+      underlyingTicker: "NVDA",
+      underlyingName: "Nvidia Corp",
+    }),
+    apiToken({
+      platformId: "ondo",
+      tokenSymbol: "AAPLon",
+      tokenContractAddress: "0xAA01",
+      underlyingTicker: "AAPL",
+      underlyingName: "Apple Inc.",
+    }),
+    apiToken({
+      platformId: "ondo",
+      tokenSymbol: "NVDAon",
+      tokenContractAddress: "0xeth",
+      underlyingTicker: "NVDA",
+      underlyingName: "Nvidia Corp",
+      binanceChainId: "1",
+    }),
   ];
   const publicLists = {
     bstock: [listing("NVDAB", "NVDA", "0x02fc"), listing("AAPLB", "AAPL", "0xAB02")],
@@ -54,7 +82,10 @@ describe("mergeCatalog", () => {
 
   it("fills bStocks the keyed API leaves out", () => {
     const aapl = stocks.find((s) => s.ticker === "AAPL")!;
-    expect(aapl.tokens.map((t) => [t.symbol, t.source])).toEqual([["AAPLB", "public"], ["AAPLon", "api"]]);
+    expect(aapl.tokens.map((t) => [t.symbol, t.source])).toEqual([
+      ["AAPLB", "public"],
+      ["AAPLon", "api"],
+    ]);
   });
 
   it("does not duplicate a token present in both lists, whatever the address case", () => {
@@ -77,8 +108,20 @@ describe("mergeCatalog", () => {
   it("maps everyday names to the fund people mean", () => {
     const withSpy = mergeCatalog(
       [
-        apiToken({ platformId: "ondo", tokenSymbol: "SPGIon", tokenContractAddress: "0x5961", underlyingTicker: "SPGI", underlyingName: "S&P Global Inc." }),
-        apiToken({ platformId: "ondo", tokenSymbol: "SPYon", tokenContractAddress: "0x5970", underlyingTicker: "SPY", underlyingName: "SPDR S&P 500 ETF Trust" }),
+        apiToken({
+          platformId: "ondo",
+          tokenSymbol: "SPGIon",
+          tokenContractAddress: "0x5961",
+          underlyingTicker: "SPGI",
+          underlyingName: "S&P Global Inc.",
+        }),
+        apiToken({
+          platformId: "ondo",
+          tokenSymbol: "SPYon",
+          tokenContractAddress: "0x5970",
+          underlyingTicker: "SPY",
+          underlyingName: "SPDR S&P 500 ETF Trust",
+        }),
       ],
       {},
     );

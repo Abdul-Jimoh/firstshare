@@ -82,3 +82,26 @@ export interface PublicRwaListing {
   type: number;
   multiplier: string;
 }
+
+export interface RwaProtection {
+  supported: boolean;
+  description: string | null;
+  url: string | null;
+}
+
+export interface RwaUnderlyingProfile {
+  binanceChainId: ChainId;
+  tokenContractAddress: string;
+  platformId: PlatformId;
+  underlyingTicker: string;
+  underlyingFullName: string;
+  tokenToShareRatio: string;
+  protections: Partial<Record<"collateralReport" | "dailyAttestationReport" | "monthlyAttestationReport", RwaProtection>>;
+  companyInfo: {
+    ceo: string | null;
+    website: string | null;
+    industry: string | null;
+    conceptsEn: string[];
+    description: string | null;
+  } | null;
+}

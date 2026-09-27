@@ -51,10 +51,7 @@ function fromPublic(l: PublicRwaListing, platform: PlatformId): StockToken {
   };
 }
 
-export function mergeCatalog(
-  apiTokens: RwaToken[],
-  publicListings: Partial<Record<PlatformId, PublicRwaListing[]>>,
-): Stock[] {
+export function mergeCatalog(apiTokens: RwaToken[], publicListings: Partial<Record<PlatformId, PublicRwaListing[]>>): Stock[] {
   const stocks = new Map<string, Stock>();
   const seen = new Set<string>();
 
@@ -85,15 +82,18 @@ export function mergeCatalog(
 }
 
 export async function loadCatalog(client: W3Client): Promise<Stock[]> {
-  const [api, bstock, ondo] = await Promise.all([
-    rwaTokens(client),
-    publicRwaListings("bstock"),
-    publicRwaListings("ondo"),
-  ]);
+  const [api, bstock, ondo] = await Promise.all([rwaTokens(client), publicRwaListings("bstock"), publicRwaListings("ondo")]);
   const stocks = mergeCatalog(api, { bstock, ondo });
   const missing = stocks.flatMap((s) => s.tokens).filter((t) => t.price === null);
   if (missing.length) {
-    const prices = new Map((await rwaPrices(client, missing.map((t) => t.address))).map((p) => [p.tokenContractAddress.toLowerCase(), Number(p.tokenPrice)]));
+    const prices = new Map(
+      (
+        await rwaPrices(
+          client,
+          missing.map((t) => t.address),
+        )
+      ).map((p) => [p.tokenContractAddress.toLowerCase(), Number(p.tokenPrice)]),
+    );
     for (const t of missing) t.price = prices.get(t.address) || null;
   }
   return stocks;
@@ -102,15 +102,15 @@ export async function loadCatalog(client: W3Client): Promise<Stock[]> {
 const ALIASES: Record<string, string> = {
   "s&p": "SPY",
   "s&p 500": "SPY",
-  "sp500": "SPY",
+  sp500: "SPY",
   "sp 500": "SPY",
-  "nasdaq": "QQQ",
+  nasdaq: "QQQ",
   "nasdaq 100": "QQQ",
-  "google": "GOOGL",
-  "alphabet": "GOOGL",
-  "facebook": "META",
-  "gold": "GLD",
-  "silver": "SLV",
+  google: "GOOGL",
+  alphabet: "GOOGL",
+  facebook: "META",
+  gold: "GLD",
+  silver: "SLV",
   "bitcoin etf": "IBIT",
 };
 

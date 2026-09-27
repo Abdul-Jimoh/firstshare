@@ -33,9 +33,7 @@ describe("signing", () => {
     const headers = init.headers as Record<string, string>;
     const path = "/build/api/v1/dex/market/rwa/tokens?binanceChainId=56";
     expect(url).toBe(`https://web3.binance.com${path}`);
-    expect(headers["X-OC-SIGN"]).toBe(
-      createHmac("sha256", "s").update(`2026-05-11T10:08:57.715ZGET${path}`).digest("base64"),
-    );
+    expect(headers["X-OC-SIGN"]).toBe(createHmac("sha256", "s").update(`2026-05-11T10:08:57.715ZGET${path}`).digest("base64"));
     expect(headers["X-OC-RECV-WINDOW"]).toBe("15000");
   });
 

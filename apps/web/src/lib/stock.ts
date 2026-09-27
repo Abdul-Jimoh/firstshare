@@ -57,3 +57,40 @@ export function tokenState(token: StockToken): TokenState {
   if (s?.openState) return { tone: "warn", label: "Open, outside US hours" };
   return { tone: "closed", label: "Closed until New York opens" };
 }
+
+export interface StockSummary {
+  ticker: string;
+  name: string;
+  logoUrl: string | null;
+  price: number | null;
+  state: TokenState | null;
+  from1: boolean;
+}
+
+export function summarize(stock: Stock): StockSummary {
+  const token = preferredToken(stock);
+  return {
+    ticker: stock.ticker,
+    name: stock.name,
+    logoUrl: stock.logoUrl,
+    price: token?.price ?? null,
+    state: token ? tokenState(token) : null,
+    from1: trades24x7(stock),
+  };
+}
+
+const FRIENDLY: Record<string, string> = {
+  SPY: "S&P 500 fund",
+  QQQ: "Nasdaq 100 fund",
+  GLD: "gold fund",
+  SLV: "silver fund",
+  IBIT: "Bitcoin fund",
+};
+
+export function displayName(s: { ticker: string; name: string }) {
+  return FRIENDLY[s.ticker] ?? shortName(s.name);
+}
+
+export function shortName(name: string) {
+  return name.replace(/,?\s+(inc|corp|corporation|co|ltd|plc|holdings)\.?$/i, "").replace(/\.com$/i, "");
+}
