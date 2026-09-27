@@ -25,10 +25,17 @@ html {
 }
 
 body {
+  overflow-x: clip;
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
 }
 
 ::selection {
   background: color-mix(in oklab, var(--color-accent) 18%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-animate] {
+    visibility: hidden;
+  }
 }

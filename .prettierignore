@@ -1,0 +1,4 @@
+node_modules
+.next
+research
+package-lock.json

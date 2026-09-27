@@ -1,11 +1,10 @@
 import type { W3Client } from "./client.ts";
-import type { PlatformId, PublicRwaListing, QuoteRoute, RwaPlatform, RwaPrice, RwaToken } from "./types.ts";
+import type { PlatformId, PublicRwaListing, QuoteRoute, RwaPlatform, RwaPrice, RwaToken, RwaUnderlyingProfile } from "./types.ts";
 
 export const BSC = "56";
 export const USDT_BSC = "0x55d398326f99059fF775485246999027B3197955";
 
-const PUBLIC_RWA_LIST_URL =
-  "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/market/token/rwa/stock/detail/list/ai";
+const PUBLIC_RWA_LIST_URL = "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/market/token/rwa/stock/detail/list/ai";
 const PUBLIC_TYPE: Record<PlatformId, number> = { ondo: 1, bstock: 3 };
 
 export function rwaPlatforms(client: W3Client) {
@@ -28,6 +27,10 @@ export async function rwaPrices(client: W3Client, addresses: string[]): Promise<
     );
   }
   return out;
+}
+
+export function rwaUnderlyingProfile(client: W3Client, tokenContractAddress: string) {
+  return client.get<RwaUnderlyingProfile>("/api/v1/dex/market/rwa/underlying-profile", { binanceChainId: BSC, tokenContractAddress });
 }
 
 export interface QuoteParams {

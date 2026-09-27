@@ -9,7 +9,11 @@ export async function GET() {
   } catch (e) {
     const code = e instanceof W3Error ? e.code : null;
     return Response.json(
-      { ok: false, region, binance: { code, regionBlocked: e instanceof W3Error && e.isRegionBlocked, error: e instanceof Error ? e.message : String(e) } },
+      {
+        ok: false,
+        region,
+        binance: { code, regionBlocked: e instanceof W3Error && e.isRegionBlocked, error: e instanceof Error ? e.message : String(e) },
+      },
       { status: 503 },
     );
   }
