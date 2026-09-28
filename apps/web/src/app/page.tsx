@@ -77,7 +77,7 @@ export default async function Home() {
                 <Arrow className="size-4 transition group-hover:translate-x-1" />
               </Link>
             </div>
-            <Reveal stagger={0.05} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <Reveal mask stagger={0.08} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {collections[i]?.map((s) => (
                 <StockCard key={s.ticker} stock={summarize(s)} />
               ))}
@@ -90,7 +90,7 @@ export default async function Home() {
         <SplitHeading className="max-w-2xl text-headline font-medium">
           Three steps. <span className="text-muted">No jargon.</span>
         </SplitHeading>
-        <Reveal stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
+        <Reveal mask stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
           <Step
             n="1"
             title="Pick a company you know"
@@ -113,7 +113,7 @@ export default async function Home() {
         <SplitHeading className="max-w-2xl text-headline font-medium">
           Is it safe? <span className="text-muted">Here&apos;s what&apos;s real.</span>
         </SplitHeading>
-        <Reveal stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
+        <Reveal mask stagger={0.08} className="mt-8 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
           <Trust
             icon={<ShieldIcon />}
             title="Backed by real shares"
@@ -163,8 +163,8 @@ function Stat({ value, label }: { value: React.ReactNode; label: string }) {
 
 function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-1 hover:border-ink/15 sm:p-7">
-      <span className="absolute -right-3 -top-8 text-numeral font-medium text-bg transition duration-500 group-hover:text-line">{n}</span>
+    <div className="group relative overflow-hidden rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-4 hover:cursor-pointer hover:border-ink/15 sm:p-7">
+      {/* <span className="absolute -right-3 -top-8 text-numeral font-medium text-bg transition duration-500 group-hover:text-line">{n}</span> */}
       <p className="relative font-mono text-sm text-muted">Step {n}</p>
       <h3 className="relative mt-10 text-xl font-medium tracking-tight sm:mt-16">{title}</h3>
       <p className="relative mt-2 text-muted">{body}</p>
@@ -174,7 +174,7 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
 
 function Trust({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="group rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-1 hover:border-ink/15 sm:p-7">
+    <div className="group rounded-card border border-line bg-surface p-6 transition duration-500 hover:-translate-y-4 hover:cursor-pointer hover:border-ink/15 sm:p-7">
       <span className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-bg transition duration-500 group-hover:bg-ink group-hover:text-white">
         {icon}
       </span>

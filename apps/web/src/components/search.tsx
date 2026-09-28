@@ -92,7 +92,7 @@ export function HeroSearch() {
 
   return (
     <div className="relative w-full max-w-xl text-left">
-      <div className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 shadow-soft transition focus-within:border-ink/25 focus-within:shadow-focus">
+      <div className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 shadow-soft">
         <SearchIcon spinning={loading} />
         <input
           ref={input}
@@ -192,7 +192,7 @@ export function LiveSearch({ defaultValue }: { defaultValue: string }) {
   }, [q, params, pathname, router]);
 
   return (
-    <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-line bg-surface p-1.5 transition focus-within:border-ink/25 focus-within:shadow-focus">
+    <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-line bg-surface p-1.5">
       <SearchIcon spinning={pending} />
       <input
         ref={input}

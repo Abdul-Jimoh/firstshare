@@ -58,7 +58,7 @@ async function Results({ q }: { q: string }) {
       <p className="mb-4 text-sm text-muted">
         {results.length} result{results.length === 1 ? "" : "s"} for &ldquo;{q}&rdquo;
       </p>
-      <Reveal key={q} stagger={0.04} y={14} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <Reveal key={q} mask stagger={0.08} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {results.map((s) => (
           <StockCard key={s.ticker} stock={summarize(s)} />
         ))}
@@ -70,7 +70,7 @@ async function Results({ q }: { q: string }) {
 async function Collection({ tickers }: { tickers: readonly string[] }) {
   const stocks = await pickStocks(tickers);
   return (
-    <Reveal stagger={0.06} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <Reveal mask stagger={0.08} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stocks.map((s) => (
         <StockCard key={s.ticker} stock={summarize(s)} />
       ))}
