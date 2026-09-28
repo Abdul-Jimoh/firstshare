@@ -70,7 +70,7 @@ function Panel({ label, status, detail }: { label: string; status: React.ReactNo
         <p className="text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
         <p className="mt-1 flex items-center gap-2 text-lg font-medium">{status}</p>
       </div>
-      <p className="text-sm text-muted sm:max-w-56 sm:text-right">{detail}</p>
+      <p className="text-sm text-muted sm:max-w-56">{detail}</p>
     </div>
   );
 }

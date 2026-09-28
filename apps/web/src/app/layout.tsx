@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
         <SmoothScroll />
         <SiteHeader />
-        <main className="mx-auto max-w-6xl px-5 sm:px-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-5 sm:px-8">{children}</main>
         <SiteFooter />
       </body>
     </html>

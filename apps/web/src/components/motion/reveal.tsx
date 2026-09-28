@@ -9,9 +9,13 @@ type RevealProps = {
   y?: number;
   delay?: number;
   stagger?: number;
+  mask?: boolean;
 };
 
-export function Reveal({ children, className, y = 18, delay = 0, stagger }: RevealProps) {
+const HIDDEN_CLIP = "inset(100% 0% 0% 0% round 1.5rem)";
+const SHOWN_CLIP = "inset(0% 0% 0% 0% round 1.5rem)";
+
+export function Reveal({ children, className, y = 18, delay = 0, stagger, mask = false }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -20,6 +24,23 @@ export function Reveal({ children, className, y = 18, delay = 0, stagger }: Reve
       gsap.set(el, { autoAlpha: 1 });
       if (reducedMotion()) return;
       const targets = stagger ? Array.from(el.children) : [el];
+      if (mask) {
+        gsap.set(targets, { clipPath: HIDDEN_CLIP, y: y * 1.5 });
+        return whenVisible(
+          el,
+          contextSafe!(() => {
+            gsap.to(targets, {
+              clipPath: SHOWN_CLIP,
+              y: 0,
+              duration: 0.9,
+              delay,
+              stagger: stagger ?? 0,
+              ease: "expo.out",
+              clearProps: "clipPath,transform",
+            });
+          }),
+        );
+      }
       gsap.set(targets, { autoAlpha: 0, y });
       return whenVisible(
         el,

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { formatUsd } from "@/lib/format";
 import type { StockSummary, TokenState } from "@/lib/stock";
-import { SpotlightLink } from "./spotlight";
 
 export function StockLogo({ stock, size = 40 }: { stock: { logoUrl: string | null; ticker: string }; size?: number }) {
   if (stock.logoUrl) {
@@ -45,7 +44,7 @@ export function StatePill({ state }: { state: TokenState }) {
 
 export function StockCard({ stock }: { stock: StockSummary }) {
   return (
-    <SpotlightLink
+    <Link
       href={`/stocks/${stock.ticker}`}
       className="group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-4 sm:gap-5 sm:p-5 transition duration-300 hover:-translate-y-1 hover:border-ink/15 hover:shadow-lift"
     >
@@ -66,7 +65,7 @@ export function StockCard({ stock }: { stock: StockSummary }) {
           <Arrow className="size-3.5 -translate-x-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
         </span>
       </div>
-    </SpotlightLink>
+    </Link>
   );
 }
 
