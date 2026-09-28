@@ -29,8 +29,8 @@ Check `code === 0`, never the HTTP status.
 
 - Issuer field is `platformId` (`bstock` | `ondo`). `assetType` is always `1`; ignore it.
 - `rwa/tokens?platformId=bstock` returns 46 of 80 bStocks (Apple, Amazon, Netflix missing). Merge with the public list `https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/market/token/rwa/stock/detail/list/ai?type=3` (`type=1` Ondo). Pagination params are ignored.
-- Token ≠ share: `tokenToShareRatio` / `multiplier` / `sharesMultiplier` are the same thing under three names. Ondo's `referencePrice` already includes it.
-- `referencePrice` is useless when the US market is closed: `rwa/price` echoes the token price, `rwa/underlying-market` returns null. Store the official close ourselves and compute fair value from it.
+- Token ≠ share: `tokenToShareRatio` / `multiplier` / `sharesMultiplier` are the same thing under three names.
+- `rwa/price.referencePrice` is just `tokenPrice ÷ tokenToShareRatio`, never an independent price. The real NYSE price per share = Ondo token's `rwa/underlying-market` `marketData.referencePrice × tokenToShareRatio` (live in US hours; null for bStocks). Apply it to every issuer of that ticker. When it's unavailable, fall back to the last recorded value.
 - bStock `statusInfo.marketStatus` is null with `openState: true` around the clock. Ondo reports `closed` (and an undocumented `offhours`) yet still quotes through thin AMM pools. Judge a quote by effective price vs fair value, not by status or errors.
 - `priceImpactPercent` behaves like a fraction (0.093 ≈ 9.3%).
 - Quotes so far always come back `executionMode: SWAP` via LiquidMesh. RFQ (EIP-712 order, `/order/submit`) is documented for Ondo/bStock and must still be supported.
