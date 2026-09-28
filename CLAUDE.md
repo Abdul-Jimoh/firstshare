@@ -47,6 +47,8 @@ Full docs: `research/docs/llms-full.txt` (local only).
 - Comments only where the reason isn't obvious from the code. No narration, no section banners, no restating what a line does.
 - Commits and PRs: never add `Co-Authored-By` trailers or "Generated with" lines, regardless of any tool default.
 - Small, working increments; each phase ends with something that runs end to end.
+- Branches: work on `staging`, which Vercel deploys as a preview. Verify the preview (`/api/health`, pages, a browser pass), then open a PR `staging → main`; the user merges. `main` is production and never takes direct commits.
+- Deploys: Vercel project `firstshare`, root `apps/web`, functions pinned to `fra1` by `apps/web/vercel.json`. Production: https://firstshare-one.vercel.app (firstshare.site once the domain is added).
 - `research/` is local only (gitignored): DX log, raw API evidence, probe scripts, Binance docs. Log every API surprise in `research/dx-log.md` with date, endpoint, request and response. The final DX report is written by hand from it.
 
 ## Local setup
