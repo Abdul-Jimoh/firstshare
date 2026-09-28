@@ -7,7 +7,7 @@ import { SliceCalculator } from "@/components/slice";
 import { StatePill, StockLogo } from "@/components/stock";
 import { getProfiles, getStock } from "@/lib/data";
 import { formatUsd } from "@/lib/format";
-import type { RwaUnderlyingProfile } from "@firstshare/core";
+import { reportDate, reportUrl, type RwaUnderlyingProfile } from "@firstshare/core";
 import { ISSUER, perShare, preferredToken, shortName, summarize, tokenState } from "@/lib/stock";
 
 type Props = { params: Promise<{ ticker: string }> };
@@ -130,10 +130,15 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
 function Proof({ profile }: { profile: RwaUnderlyingProfile | undefined }) {
   const p = profile?.protections;
   const links = [
-    p?.dailyAttestationReport?.url && { href: p.dailyAttestationReport.url, label: "Daily backing report" },
-    p?.monthlyAttestationReport?.url && { href: p.monthlyAttestationReport.url, label: "Monthly backing report" },
-    p?.collateralReport?.url && { href: p.collateralReport.url, label: "Collateral report" },
-  ].filter((l): l is { href: string; label: string } => Boolean(l));
+    p?.dailyAttestationReport?.url && { url: p.dailyAttestationReport.url, label: "Daily backing report" },
+    p?.monthlyAttestationReport?.url && { url: p.monthlyAttestationReport.url, label: "Monthly backing report" },
+    p?.collateralReport?.url && { url: p.collateralReport.url, label: "Collateral report" },
+  ]
+    .filter((l): l is { url: string; label: string } => Boolean(l))
+    .map((l) => {
+      const date = reportDate(l.url);
+      return { href: reportUrl(l.url), label: date ? `${l.label} (${date})` : l.label };
+    });
 
   if (links.length) {
     return (
