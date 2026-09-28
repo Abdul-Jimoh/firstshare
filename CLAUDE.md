@@ -37,6 +37,8 @@ Check `code === 0`, never the HTTP status.
 - Ondo minimum: `40375`, the message says $5 but $5 fails; $20 works.
 - Required params only surface one `40001` at a time. Known: `market/token/search` needs `search` + `chains`; `rwa/price` needs `tokenContractAddresses`.
 - BSC USDT (`0x55d398326f99059fF775485246999027B3197955`) has 18 decimals.
+- Simulate: `POST /pre-transaction/simulate` body `{ binanceChainId: "56", evmTx: { from, to, value, data } }`. The error says "evmParams is required" when `evmTx` is missing; ignore the name. Returns `status` SUCCESS/FAILED, `failReason`, `balanceChanges`, `allowanceChanges`.
+- Swap flow (SWAP mode): `/approve-transaction` (spender = `dexContractAddress`) → `/quote` (quoteId lives ~30s) → `/swap` → `data.tx` {from,to,data,value,gas,gasPrice}. Full endpoint schemas: `research/docs/api-*.txt` (rendered reference pages; llms-full.txt lacks them).
 - Rate limits: 5 rps per endpoint, 1200/min per key and per IP.
 
 Full docs: `research/docs/llms-full.txt` (local only).

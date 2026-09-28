@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { SiteFooter, SiteHeader } from "@/components/brand";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
+import { Providers } from "@/components/providers";
 import "lenis/dist/lenis.css";
 import "./globals.css";
 
@@ -20,10 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
       </head>
       <body className="min-h-dvh font-sans" suppressHydrationWarning>
-        <SmoothScroll />
-        <SiteHeader />
-        <main className="mx-auto max-w-7xl px-5 sm:px-8">{children}</main>
-        <SiteFooter />
+        <Providers>
+          <SmoothScroll />
+          <SiteHeader />
+          <main className="mx-auto max-w-7xl px-5 sm:px-8">{children}</main>
+          <SiteFooter />
+        </Providers>
       </body>
     </html>
   );
