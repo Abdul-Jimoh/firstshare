@@ -59,3 +59,17 @@ export async function publicRwaListings(platformId: PlatformId, fetchImpl: typeo
   if (!json.success || !Array.isArray(json.data)) throw new Error(`public RWA list failed for ${platformId}`);
   return json.data;
 }
+
+// The Web3 API returns report links on onchainos.bnbstatic.com, which answers 403; the same files are served from bin.bnbstatic.com.
+export function reportUrl(url: string): string {
+  return url.replace(/^https?:\/\/onchainos\.bnbstatic\.com/, "https://bin.bnbstatic.com");
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function reportDate(url: string): string | null {
+  const m = url.match(/(\d{4})-(\d{2})(?:-(\d{2}))?\.pdf$/);
+  if (!m) return null;
+  const month = MONTHS[Number(m[2]) - 1];
+  return m[3] ? `${Number(m[3])} ${month}` : `${month} ${m[1]}`;
+}
