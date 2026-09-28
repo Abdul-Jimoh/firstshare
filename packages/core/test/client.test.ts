@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { W3Client, W3Error, encodeQuery, preHash } from "../src/binance/client.ts";
+import { reportDate, reportUrl } from "../src/binance/api.ts";
 
 const fixedNow = () => new Date("2026-05-11T10:08:57.715Z");
 
@@ -61,5 +62,19 @@ describe("errors", () => {
 
   it("refuses to start without credentials", () => {
     expect(() => new W3Client({ apiKey: "", secretKey: "" })).toThrow();
+  });
+});
+
+describe("attestation reports", () => {
+  it("points links at the host that actually serves them", () => {
+    expect(reportUrl("https://onchainos.bnbstatic.com/images/web3-data/public/token/ondo/pdf/daily-2026-09-22.pdf")).toBe(
+      "https://bin.bnbstatic.com/images/web3-data/public/token/ondo/pdf/daily-2026-09-22.pdf",
+    );
+  });
+
+  it("reads the report date from the file name", () => {
+    expect(reportDate("https://x/pdf/daily-2026-09-22.pdf")).toBe("22 Sep");
+    expect(reportDate("https://x/pdf/monthly-2026-07.pdf")).toBe("Jul 2026");
+    expect(reportDate("https://x/report.pdf")).toBeNull();
   });
 });
