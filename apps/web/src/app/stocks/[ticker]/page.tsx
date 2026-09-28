@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { CheckCard } from "@/components/check-card";
 import { Reveal } from "@/components/motion/reveal";
 import { SliceCalculator } from "@/components/slice";
 import { StatePill, StockLogo } from "@/components/stock";
 import { getProfiles, getStock } from "@/lib/data";
 import { formatUsd } from "@/lib/format";
 import type { RwaUnderlyingProfile } from "@firstshare/core";
-import { ISSUER, preferredToken, shortName, summarize, tokenState } from "@/lib/stock";
+import { ISSUER, perShare, preferredToken, shortName, summarize, tokenState } from "@/lib/stock";
 
 type Props = { params: Promise<{ ticker: string }> };
 
@@ -39,7 +40,7 @@ export default async function StockPage({ params }: Props) {
           </div>
         </div>
         <div className="sm:text-right">
-          <p className="text-headline font-medium">{formatUsd(pick?.price)}</p>
+          <p className="text-headline font-medium">{formatUsd(perShare(pick))}</p>
           <p className="mt-2 text-sm text-muted">per share, on-chain</p>
         </div>
       </Reveal>
@@ -95,7 +96,7 @@ export default async function StockPage({ params }: Props) {
                       <Proof profile={profiles.get(t.address)} />
                     </div>
                     <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-1.5">
-                      <p className="font-medium">{formatUsd(t.price)}</p>
+                      <p className="font-medium">{formatUsd(perShare(t))}</p>
                       <StatePill state={tokenState(t)} />
                     </div>
                   </li>
@@ -105,13 +106,11 @@ export default async function StockPage({ params }: Props) {
           </Reveal>
         </div>
 
-        <Reveal delay={0.2} className="flex flex-col gap-4">
+        <Reveal delay={0.2} className="flex flex-col gap-4 lg:sticky lg:top-24">
+          <CheckCard ticker={stock.ticker} name={stock.name} />
           <div className="rounded-card border border-line bg-surface p-5 sm:p-7">
-            <p className="mb-6 text-sm text-muted">Try an amount</p>
+            <p className="mb-6 text-sm text-muted">What a slice looks like</p>
             <SliceCalculator stocks={[summarize(stock)]} compact />
-          </div>
-          <div className="rounded-card border border-dashed border-line p-5 sm:p-7 text-sm text-muted">
-            Buying straight from this page arrives next: pick an amount, see our price check, confirm in your wallet.
           </div>
         </Reveal>
       </section>

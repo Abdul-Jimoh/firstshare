@@ -25,6 +25,10 @@ export function preferredToken(stock: Stock): StockToken | undefined {
   return stock.tokens.find((t) => t.platform === "bstock") ?? stock.tokens[0];
 }
 
+export function perShare(token: StockToken | undefined): number | null {
+  return token?.price ? token.price / token.sharesPerToken : null;
+}
+
 export function trades24x7(stock: Stock) {
   return stock.tokens.some((t) => t.platform === "bstock");
 }
@@ -73,7 +77,7 @@ export function summarize(stock: Stock): StockSummary {
     ticker: stock.ticker,
     name: stock.name,
     logoUrl: stock.logoUrl,
-    price: token?.price ?? null,
+    price: perShare(token),
     state: token ? tokenState(token) : null,
     from1: trades24x7(stock),
   };
