@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Verdict } from "@firstshare/core";
 import type { CheckView } from "@/lib/check";
 import { formatShares, formatUsd } from "@/lib/format";
+import { shortName } from "@/lib/stock";
+import { BuyFlow } from "./buy-flow";
 import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
 
 const PRESETS = [1, 5, 20, 100];
@@ -34,6 +36,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const body = useRef<HTMLDivElement>(null);
+  const [buying, setBuying] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -79,6 +82,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
 
   return (
     <div className="rounded-card border border-line bg-surface p-5 sm:p-7">
+      <BuyFlow ticker={ticker} name={shortName(name)} amountUsd={amount} open={buying} onClose={() => setBuying(false)} />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted">Price check</p>
         <button
@@ -143,6 +147,19 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
                   </dd>
                 </div>
               </dl>
+            )}
+
+            {check.pick && (
+              <button
+                onClick={() => setBuying(true)}
+                className={
+                  check.verdict === "avoid"
+                    ? "mt-5 w-full rounded-full border border-line px-6 py-3.5 text-sm font-medium transition hover:border-ink/30"
+                    : "mt-5 w-full rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-white transition hover:bg-accent-ink"
+                }
+              >
+                {check.verdict === "avoid" ? "Buy anyway" : `Buy ${formatUsd(check.amountUsd)} of ${shortName(name)}`}
+              </button>
             )}
 
             {check.notes.length > 0 && (
