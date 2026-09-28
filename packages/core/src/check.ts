@@ -90,6 +90,8 @@ export function fromQuoteError(e: unknown): Quoted {
   return { ok: false, reason: "The price couldn't be checked.", code: null };
 }
 
+const nyStamp = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" });
+
 const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const pct = (n: number) => `${(Math.abs(n) * 100).toFixed(n !== 0 && Math.abs(n) < 0.001 ? 2 : 1)}%`;
 
@@ -138,12 +140,12 @@ export function assess(input: {
   const shares = q.tokensOut * pick.token.sharesPerToken;
   const premium = pick.premium;
 
-  if (market.session !== "regular" && fair) {
+  if (fair?.source === "recorded") {
     notes.push(
-      fair.source === "live"
-        ? "New York is outside regular hours, so its price is from thin extended-hours trading."
-        : "New York is closed. We compare with its last price; news since then can explain a difference.",
+      `New York is closed. We compare with its last price (${nyStamp.format(fair.at)} ET); news since then can explain a difference.`,
     );
+  } else if (fair && market.session !== "regular") {
+    notes.push("New York is outside regular hours, so its price is from thin extended-hours trading.");
   }
   if (q.priceImpact > 0.01) notes.push(`This order is large for the available supply and moves the price by about ${pct(q.priceImpact)}.`);
   const skipped = options.find((o) => o !== pick && o.quote.ok && pick.quote.ok && o.quote.perShare > q.perShare * 1.002);
@@ -190,7 +192,7 @@ export async function runCheck(
   client: W3Client,
   stock: Stock,
   amountUsd: number,
-  opts: { recordedFair?: FairPrice | null; now?: Date } = {},
+  opts: { recordedFair?: () => Promise<FairPrice | null>; now?: Date } = {},
 ): Promise<Check> {
   const amount = BigInt(Math.round(amountUsd * 100)) * 10n ** 16n;
   const [fair, ...quotes] = await Promise.all([
@@ -202,5 +204,6 @@ export async function runCheck(
     ),
   ]);
   const options: Option[] = stock.tokens.map((token, i) => ({ token, paused: pauseReason(token), quote: quotes[i]!, premium: null }));
-  return assess({ stock, amountUsd, options, fair: fair ?? opts.recordedFair ?? null, now: opts.now ?? new Date() });
+  const recorded = fair ? null : await opts.recordedFair?.().catch(() => null);
+  return assess({ stock, amountUsd, options, fair: fair ?? recorded ?? null, now: opts.now ?? new Date() });
 }

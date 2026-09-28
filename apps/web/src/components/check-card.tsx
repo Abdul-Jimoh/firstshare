@@ -8,6 +8,8 @@ import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
 
 const PRESETS = [1, 5, 20, 100];
 
+const nyStamp = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" });
+
 const VERDICT: Record<Verdict, { label: string; dot: string }> = {
   good: { label: "Good price", dot: "bg-gain" },
   fair: { label: "Fair price", dot: "bg-gain" },
@@ -185,7 +187,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
             {check.fair && (
               <p className="mt-4 text-xs text-muted">
                 New York price {formatUsd(check.fair.perShare)} a share
-                {check.fair.source === "live" ? ", live from the exchange." : ", from its last close."}
+                {check.fair.source === "live" ? ", live from the exchange." : `, its last price (${nyStamp.format(check.fair.at)} ET).`}
               </p>
             )}
           </div>
