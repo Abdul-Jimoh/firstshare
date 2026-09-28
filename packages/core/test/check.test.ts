@@ -54,10 +54,16 @@ describe("assess", () => {
   });
 
   it("warns off the weekend SPYon trap and says why", () => {
-    const c = assess({ stock, amountUsd: 100, options: [option(token("ondo"), 859.93)], fair: fair(785.53, "recorded"), now: SATURDAY });
+    const c = assess({
+      stock,
+      amountUsd: 100,
+      options: [option(token("ondo"), 859.93)],
+      fair: { perShare: 785.53, source: "recorded", at: Date.parse("2026-09-25T21:05:00Z") },
+      now: SATURDAY,
+    });
     expect(c.verdict).toBe("avoid");
     expect(c.headline).toMatch(/9\.5% above New York's \$785\.53\. We'd wait\./);
-    expect(c.notes[0]).toMatch(/New York is closed/);
+    expect(c.notes[0]).toMatch(/New York is closed\. We compare with its last price \(Fri 5:05 PM ET\)/);
   });
 
   it("keeps bStocks unless another version is meaningfully cheaper", () => {

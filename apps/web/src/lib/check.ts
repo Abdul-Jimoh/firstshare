@@ -1,5 +1,6 @@
 import { clientFromEnv, runCheck, type Check, type Verdict } from "@firstshare/core";
 import { getStock } from "./data";
+import { lastNyPrice, recordNyPrice } from "./prices";
 import { ISSUER } from "./stock";
 
 export interface CheckView {
@@ -9,7 +10,7 @@ export interface CheckView {
   headline: string;
   notes: string[];
   shares: number | null;
-  fair: { perShare: number; source: "live" | "recorded" } | null;
+  fair: { perShare: number; source: "live" | "recorded"; at: number } | null;
   pick: { issuer: string; symbol: string; perShare: number } | null;
   options: { issuer: string; symbol: string; picked: boolean; perShare: number | null; premium: number | null; problem: string | null }[];
   at: number;
@@ -23,7 +24,7 @@ function toView(c: Check): CheckView {
     headline: c.headline,
     notes: c.notes,
     shares: c.shares,
-    fair: c.fair && { perShare: c.fair.perShare, source: c.fair.source },
+    fair: c.fair && { perShare: c.fair.perShare, source: c.fair.source, at: c.fair.at },
     pick: c.pick?.quote.ok
       ? { issuer: ISSUER[c.pick.token.platform].name, symbol: c.pick.token.symbol, perShare: c.pick.quote.perShare }
       : null,
@@ -48,7 +49,10 @@ export async function checkStock(ticker: string, amountUsd: number): Promise<Che
   if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
   const value = (async () => {
     const stock = await getStock(ticker);
-    return stock ? toView(await runCheck(clientFromEnv(), stock, amountUsd)) : null;
+    if (!stock) return null;
+    const check = await runCheck(clientFromEnv(), stock, amountUsd, { recordedFair: () => lastNyPrice(stock.ticker) });
+    if (check.fair?.source === "live") await recordNyPrice(stock.ticker, check.fair).catch(() => {});
+    return toView(check);
   })();
   cache.set(key, { at: Date.now(), value });
   value.catch(() => cache.delete(key));
