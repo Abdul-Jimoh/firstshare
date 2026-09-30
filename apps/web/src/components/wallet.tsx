@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useConnect, useConnection, useConnectors, useDisconnect } from "wagmi";
 import { shortAddress } from "@/lib/wallet";
 import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
@@ -33,8 +34,8 @@ export function Modal({
     { dependencies: [open] },
   );
 
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
       <div
         ref={panel}
@@ -59,7 +60,8 @@ export function Modal({
         </div>
         <div className="mt-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
