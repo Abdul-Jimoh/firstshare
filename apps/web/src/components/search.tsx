@@ -147,6 +147,7 @@ export function HeroSearch() {
               role="option"
               aria-selected={i === active}
               onMouseEnter={() => setActive(i)}
+              onMouseDown={(e) => e.preventDefault()}
               className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition ${i === active ? "bg-bg" : ""}`}
             >
               <StockLogo stock={s} size={34} />

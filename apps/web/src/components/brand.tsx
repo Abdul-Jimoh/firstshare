@@ -166,11 +166,11 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="mx-auto mt-24 max-w-7xl px-5 sm:mt-32 sm:px-8">
-      <div className="grid gap-10 border-t border-line pt-10 text-sm sm:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="grid justify-items-center gap-10 border-t border-line pt-10 text-center text-sm sm:grid-cols-3">
         <p className="max-w-sm text-muted">
           Real US stocks as tokens on BNB Smart Chain, held in your own wallet. Not investment advice. Prices move, and you can lose money.
         </p>
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col items-center gap-2">
           <p className="mb-1 font-mono text-xs uppercase tracking-[0.14em] text-muted">Explore</p>
           {NAV.map((item) => (
             <Link key={item.href} href={item.href} className="w-fit transition hover:text-muted">
@@ -178,14 +178,14 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-center gap-2">
           <p className="mb-1 font-mono text-xs uppercase tracking-[0.14em] text-muted">Built on</p>
           <p>BNB Smart Chain</p>
           <p>Binance Web3 API</p>
           <p>bStocks · Ondo</p>
         </div>
       </div>
-      <p aria-hidden className="mt-16 select-none text-[clamp(4rem,19vw,17rem)] font-semibold leading-[0.8] tracking-[-0.07em] text-card">
+      <p aria-hidden className="mt-16 select-none text-center text-[clamp(4rem,19vw,17rem)] font-semibold leading-[0.8] tracking-[-0.07em] text-card">
         firstshare
       </p>
     </footer>
