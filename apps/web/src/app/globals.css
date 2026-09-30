@@ -1,48 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #f7f8fa;
-  --color-surface: #ffffff;
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
-  --color-accent: #4f46e5;
-  --color-accent-ink: #4338ca;
-  --color-gain: #15803d;
-  --color-loss: #e5484d;
-  --color-warn: #d97706;
+  --color-bg: #f1eee9;
+  --color-surface: #faf8f5;
+  --color-card: #e8e3dc;
+  --color-card-hover: #e1dbd2;
+  --color-ink: #1f1e1c;
+  --color-muted: #6e6a63;
+  --color-line: #dad4cb;
+  --color-accent: #e3a447;
+  --color-accent-ink: #d1902f;
+  --color-gain: #2f7a4e;
+  --color-loss: #c4473a;
+  --color-warn: #b7791f;
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --text-2xs: 0.65rem;
-  --text-display: clamp(2.25rem, 10.5vw, 6.75rem);
-  --text-display--line-height: 1;
-  --text-display--letter-spacing: -0.05em;
-  --text-title: clamp(2.25rem, 6vw, 4.5rem);
-  --text-title--line-height: 1;
-  --text-title--letter-spacing: -0.045em;
-  --text-headline: clamp(2rem, 5.5vw, 4rem);
-  --text-headline--line-height: 1.02;
-  --text-headline--letter-spacing: -0.04em;
+  --text-display: clamp(2.4rem, 10.5vw, 7rem);
+  --text-display--line-height: 0.95;
+  --text-display--letter-spacing: -0.06em;
+  --text-display--font-weight: 600;
+  --text-title: clamp(2.4rem, 6vw, 4.75rem);
+  --text-title--line-height: 0.98;
+  --text-title--letter-spacing: -0.055em;
+  --text-title--font-weight: 600;
+  --text-headline: clamp(2.1rem, 5.5vw, 4.25rem);
+  --text-headline--line-height: 1;
+  --text-headline--letter-spacing: -0.05em;
+  --text-headline--font-weight: 600;
   --text-subhead: clamp(1.5rem, 3vw, 2.25rem);
-  --text-subhead--line-height: 1.1;
-  --text-subhead--letter-spacing: -0.03em;
+  --text-subhead--line-height: 1.05;
+  --text-subhead--letter-spacing: -0.04em;
+  --text-subhead--font-weight: 600;
   --text-stat: clamp(2rem, 5vw, 3.5rem);
   --text-stat--line-height: 1;
-  --text-stat--letter-spacing: -0.045em;
+  --text-stat--letter-spacing: -0.05em;
+  --text-stat--font-weight: 600;
   --text-lead: clamp(1.6rem, 3.4vw, 2.6rem);
-  --text-lead--line-height: 1.1;
-  --text-lead--letter-spacing: -0.03em;
+  --text-lead--line-height: 1.08;
+  --text-lead--letter-spacing: -0.04em;
+  --text-lead--font-weight: 600;
   --text-numeral: 9rem;
   --text-numeral--line-height: 1;
   --text-numeral--letter-spacing: -0.06em;
 
-  --radius-card: 1.5rem;
+  --radius-card: 1.25rem;
 
-  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 32px -18px rgb(15 23 42 / 0.25);
-  --shadow-lift: 0 18px 40px -20px rgb(15 23 42 / 0.25);
-  --shadow-panel: 0 24px 60px -24px rgb(15 23 42 / 0.35);
+  --shadow-soft: 0 1px 2px rgb(31 30 28 / 0.04), 0 12px 32px -18px rgb(31 30 28 / 0.22);
+  --shadow-lift: 0 18px 40px -22px rgb(31 30 28 / 0.28);
+  --shadow-panel: 0 24px 60px -24px rgb(31 30 28 / 0.35);
+  --shadow-offset: 6px 6px 0 0 var(--color-ink);
 }
 
 html {
@@ -58,7 +67,13 @@ body {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--color-accent) 18%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 45%, transparent);
+}
+
+@utility grid-lines {
+  background-image: linear-gradient(to right, var(--color-line) 1px, transparent 1px);
+  background-size: calc(100% / 6) 100%;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
