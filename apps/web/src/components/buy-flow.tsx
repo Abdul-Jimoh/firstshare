@@ -196,7 +196,7 @@ function Body({
       const busy = stage.kind === "confirming";
       return (
         <div>
-          <dl className="divide-y divide-line rounded-2xl border border-line text-sm">
+          <dl className="divide-y divide-line rounded-2xl bg-card text-sm">
             <Row label="You pay" value={`${formatUsd(amountUsd)} USDT`} />
             <Row label="You get about" value={`${formatShares(o.shares)} share${o.shares >= 2 ? "s" : ""} of ${o.name}`} />
             {o.minShares !== null && (
@@ -230,7 +230,7 @@ function Body({
             You now own about <strong className="font-medium">{formatShares(o.shares)}</strong> share{o.shares >= 2 ? "s" : ""} of {o.name},
             bought for {formatUsd(amountUsd)}.
           </p>
-          <dl className="mt-6 divide-y divide-line rounded-2xl border border-line text-sm">
+          <dl className="mt-6 divide-y divide-line rounded-2xl bg-card text-sm">
             <Row label="Price per share" value={formatUsd(o.perShare)} />
             <Row label="Held as" value={`${o.issuer} ${o.symbol}, in your wallet`} />
             {stage.feeBnb !== null && <Row label="Network fee paid" value={`${stage.feeBnb.toFixed(6)} BNB`} />}
@@ -243,7 +243,7 @@ function Body({
               href={`https://bscscan.com/tx/${stage.hash}`}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full border border-line px-5 py-3 text-sm font-medium transition hover:border-ink/30"
+              className="rounded-full border-[1.5px] border-ink px-5 py-3 text-sm font-semibold transition hover:bg-card"
             >
               Proof on BscScan ↗
             </a>
@@ -262,7 +262,7 @@ function Body({
                 href={`https://bscscan.com/tx/${stage.hash}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-line px-5 py-3 text-sm font-medium"
+                className="rounded-full border-[1.5px] border-ink px-5 py-3 text-sm font-semibold"
               >
                 View on BscScan ↗
               </a>
@@ -328,7 +328,7 @@ function Primary({
     <button
       onClick={onClick}
       disabled={busy}
-      className={`w-full rounded-full bg-accent px-6 py-4 text-sm font-medium text-white transition hover:bg-accent-ink disabled:opacity-60 ${className}`}
+      className={`w-full rounded-full bg-accent px-6 py-4 text-sm font-semibold text-ink transition hover:bg-accent-ink disabled:opacity-60 ${className}`}
     >
       {children}
     </button>
@@ -337,7 +337,7 @@ function Primary({
 
 function Secondary({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="rounded-full border border-line px-5 py-3 text-sm font-medium transition hover:border-ink/30">
+    <button onClick={onClick} className="rounded-full border-[1.5px] border-ink px-5 py-3 text-sm font-semibold transition hover:bg-card">
       {children}
     </button>
   );

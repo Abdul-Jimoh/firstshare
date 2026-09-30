@@ -81,7 +81,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
   const v = check ? VERDICT[check.verdict] : null;
 
   return (
-    <div className="rounded-card border border-line bg-surface p-5 sm:p-7">
+    <div className="rounded-card border-[1.5px] border-ink bg-surface p-5 sm:p-7">
       <BuyFlow ticker={ticker} name={shortName(name)} amountUsd={amount} open={buying} onClose={() => setBuying(false)} />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted">Price check</p>
@@ -94,7 +94,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
         </button>
       </div>
 
-      <label className="mt-4 flex items-center gap-2 rounded-2xl border border-line bg-bg px-4 py-3">
+      <label className="mt-4 flex items-center gap-2 rounded-2xl bg-card px-4 py-3">
         <span className="text-2xl font-medium text-muted">$</span>
         <input
           inputMode="decimal"
@@ -114,7 +114,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
               setAmount(p);
               setDraft(String(p));
             }}
-            className={`rounded-full border px-4 py-1.5 text-sm transition ${amount === p ? "border-ink bg-ink text-white" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
+            className={`rounded-full border px-4 py-1.5 text-sm transition ${amount === p ? "border-ink bg-ink text-surface" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
           >
             ${p}
           </button>
@@ -154,8 +154,8 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
                 onClick={() => setBuying(true)}
                 className={
                   check.verdict === "avoid"
-                    ? "mt-5 w-full rounded-full border border-line px-6 py-3.5 text-sm font-medium transition hover:border-ink/30"
-                    : "mt-5 w-full rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-white transition hover:bg-accent-ink"
+                    ? "mt-5 w-full rounded-full border-[1.5px] border-ink px-6 py-3.5 text-sm font-semibold transition hover:bg-card"
+                    : "mt-5 w-full rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-accent-ink"
                 }
               >
                 {check.verdict === "avoid" ? "Buy anyway" : `Buy ${formatUsd(check.amountUsd)} of ${shortName(name)}`}
@@ -180,7 +180,7 @@ export function CheckCard({ ticker, name }: { ticker: string; name: string }) {
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       {o.issuer}
                       {o.picked && (
-                        <span className="whitespace-nowrap rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent-ink">
+                        <span className="whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-ink">
                           Our pick
                         </span>
                       )}

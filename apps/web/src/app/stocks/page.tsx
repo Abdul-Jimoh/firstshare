@@ -17,7 +17,7 @@ export default async function Explore({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="pt-8">
-      <h1 className="text-title font-medium">{collection ? collection.title : "Explore"}</h1>
+      <h1 className="text-title">{collection ? collection.title : "Explore"}</h1>
       <p className="mt-4 max-w-xl text-lg text-muted">
         {collection ? collection.blurb : "Every company and fund you can own on Firstshare. Start typing a name."}
       </p>
@@ -47,7 +47,7 @@ async function Results({ q }: { q: string }) {
   const results = await findStocks(q);
   if (!results.length) {
     return (
-      <div className="rounded-card border border-line bg-surface p-12 text-center">
+      <div className="rounded-card bg-card p-12 text-center">
         <p className="text-lg font-medium">Nothing called &ldquo;{q}&rdquo; yet.</p>
         <p className="mt-1 text-muted">Try the company name, like &ldquo;Apple&rdquo;, or its ticker, like &ldquo;AAPL&rdquo;.</p>
       </div>
@@ -84,7 +84,7 @@ async function Everything({ showAll }: { showAll: boolean }) {
   const shown = showAll ? byName : byName.slice(0, PAGE);
   return (
     <>
-      <Reveal className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+      <Reveal className="divide-y divide-line overflow-hidden rounded-card bg-card">
         {shown.map((s) => (
           <StockRow key={s.ticker} stock={summarize(s)} />
         ))}
@@ -94,7 +94,7 @@ async function Everything({ showAll }: { showAll: boolean }) {
           <Link
             href="/stocks?all=1"
             scroll={false}
-            className="inline-block rounded-full border border-line bg-surface px-6 py-3 text-sm font-medium transition hover:border-ink/30"
+            className="inline-block rounded-full border-[1.5px] border-ink px-6 py-3 text-sm font-semibold transition hover:bg-card"
           >
             Show all {catalog.length}
           </Link>
@@ -108,7 +108,7 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
-      className={`rounded-full border px-4 py-2 transition ${active ? "border-ink bg-ink text-white" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
+      className={`rounded-full border px-4 py-2 transition ${active ? "border-ink bg-ink text-surface" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
     >
       {children}
     </Link>

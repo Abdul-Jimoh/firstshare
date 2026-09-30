@@ -66,7 +66,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
     <div className={`grid items-center gap-8 sm:gap-10 ${compact ? "" : "lg:grid-cols-2 lg:gap-16"}`}>
       <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-44" : "max-w-64 sm:max-w-88"}`}>
         <svg viewBox="0 0 120 120" className="size-full -rotate-90">
-          <circle cx="60" cy="60" r="56" fill="var(--color-surface)" stroke="var(--color-line)" strokeWidth="1" />
+          <circle cx="60" cy="60" r="56" fill="var(--color-surface)" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="1" />
           <circle
             ref={slice}
             cx="60"
@@ -99,7 +99,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
               <button
                 key={s.ticker}
                 onClick={() => setTicker(s.ticker)}
-                className={`flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-4 text-sm transition ${s.ticker === stock.ticker ? "border-ink bg-ink text-white" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
+                className={`flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-4 text-sm transition ${s.ticker === stock.ticker ? "border-ink bg-ink text-surface" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
               >
                 <StockLogo stock={s} size={26} />
                 {displayName(s)}
@@ -108,7 +108,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
           </div>
         )}
 
-        <p className={compact ? "text-2xl font-medium leading-tight tracking-tight" : "mt-8 text-lead font-medium sm:mt-10"}>
+        <p className={compact ? "text-2xl font-medium leading-tight tracking-tight" : "mt-8 text-lead sm:mt-10"}>
           {formatUsd(amount)} buys you <span ref={shown}>{formatShares(shares)}</span>
           <span className="text-muted">
             {" "}
@@ -128,7 +128,7 @@ export function SliceCalculator({ stocks, compact = false }: { stocks: StockSumm
             <button
               key={p}
               onClick={() => setAmount(p)}
-              className={`rounded-full border px-4 py-2 text-sm transition ${amount === p ? "border-ink bg-ink text-white" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
+              className={`rounded-full border px-4 py-2 text-sm transition ${amount === p ? "border-ink bg-ink text-surface" : "border-line bg-surface text-muted hover:border-ink/30 hover:text-ink"}`}
             >
               ${p}
             </button>
