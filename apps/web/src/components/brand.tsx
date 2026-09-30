@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Magnetic } from "./motion/magnetic";
 import { Arrow } from "./stock";
+import { WalletButton } from "./wallet";
 import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
 
 const SLICE = 2 * Math.PI * 7;
@@ -118,9 +119,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <Magnetic className="hidden sm:inline-block">
-          <Link href="/stocks" className="block rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-ink/85">
-            Start with $1
-          </Link>
+          <WalletButton />
         </Magnetic>
         <button
           type="button"
@@ -150,14 +149,9 @@ export function SiteHeader() {
             </div>
           ))}
           <div className="mt-4 overflow-hidden">
-            <Link
-              data-menu-item
-              href="/stocks"
-              onClick={() => setOpen(false)}
-              className="block rounded-full bg-ink px-5 py-4 text-center text-sm font-medium text-white"
-            >
-              Start with $1
-            </Link>
+            <div data-menu-item>
+              <WalletButton className="w-full py-4" />
+            </div>
           </div>
         </nav>
       </div>
