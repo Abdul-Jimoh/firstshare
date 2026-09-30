@@ -56,6 +56,7 @@ Full docs: `research/docs/llms-full.txt` (local only).
 ## Local setup
 
 - `.env` at the repo root: `BINANCE_W3_API_KEY`, `BINANCE_W3_SECRET_KEY` (see `.env.example`).
+- The repo lives in `~/Developer/firstshare`. Never keep it in `~/Desktop` or `~/Documents`: iCloud sync evicts files there when the disk is full, which emptied source files and broke `.git` once.
 - Binance domains are DNS-blocked from Nigerian ISPs: a system-wide VPN to an allowed country must be on for any API call from this machine.
 - `research/docs/fetch-docs.mjs` refreshes the Binance docs (the site sits behind an AWS WAF JS challenge; plain curl gets a 202).
 

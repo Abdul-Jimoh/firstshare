@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Magnetic } from "./motion/magnetic";
 import { Arrow } from "./stock";
+import { NyClock } from "./ny-clock";
 import { WalletButton } from "./wallet";
 import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
 
@@ -94,9 +95,9 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-40 bg-bg/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        <Link href="/" className="group flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
+        <Link href="/" className="group flex items-center gap-2 text-xl font-semibold tracking-tighter sm:text-2xl">
           <span className="transition duration-500 group-hover:rotate-90">
             <Mark animate />
           </span>
@@ -106,7 +107,7 @@ export function SiteHeader() {
           onMouseLeave={() => gsap.to(pill.current, { autoAlpha: 0, duration: 0.3 })}
           className="relative hidden items-center rounded-full border border-line bg-surface p-1 text-sm sm:flex"
         >
-          <span ref={pill} aria-hidden className="invisible absolute inset-y-1 left-0 w-0 rounded-full bg-bg" />
+          <span ref={pill} aria-hidden className="invisible absolute inset-y-1 left-0 w-0 rounded-full bg-card" />
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -118,16 +119,19 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <Magnetic className="hidden sm:inline-block">
-          <WalletButton />
-        </Magnetic>
+        <div className="hidden items-center gap-5 sm:flex">
+          <NyClock />
+          <Magnetic>
+            <WalletButton />
+          </Magnetic>
+        </div>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? "Close menu" : "Open menu"}
-          className="relative flex size-11 items-center justify-center rounded-full border border-line bg-surface sm:hidden"
+          className="relative flex size-11 items-center justify-center rounded-full border-[1.5px] border-ink sm:hidden"
         >
           <span className={`absolute h-0.5 w-4.5 rounded-full bg-ink transition duration-300 ${open ? "rotate-45" : "-translate-y-1"}`} />
           <span className={`absolute h-0.5 w-4.5 rounded-full bg-ink transition duration-300 ${open ? "-rotate-45" : "translate-y-1"}`} />
@@ -141,7 +145,7 @@ export function SiteHeader() {
                 data-menu-item
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between py-3 text-3xl font-medium tracking-tight"
+                className="flex items-center justify-between py-3 text-3xl font-semibold tracking-tighter"
               >
                 {item.label}
                 <Arrow className="size-5 text-muted" />
@@ -161,14 +165,29 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="mx-auto mt-20 max-w-7xl border-t sm:mt-24 border-line px-5 py-10 text-sm text-muted sm:px-8">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row">
-        <p className="flex items-center gap-2">
-          <Mark className="size-4" />
-          Tokenized stocks on BNB Smart Chain. You hold them in your own wallet.
+    <footer className="mx-auto mt-24 max-w-7xl px-5 sm:mt-32 sm:px-8">
+      <div className="grid gap-10 border-t border-line pt-10 text-sm sm:grid-cols-[1.4fr_1fr_1fr]">
+        <p className="max-w-sm text-muted">
+          Real US stocks as tokens on BNB Smart Chain, held in your own wallet. Not investment advice. Prices move, and you can lose money.
         </p>
-        <p>Not investment advice. Prices move, and you can lose money.</p>
+        <nav className="flex flex-col gap-2">
+          <p className="mb-1 font-mono text-xs uppercase tracking-[0.14em] text-muted">Explore</p>
+          {NAV.map((item) => (
+            <Link key={item.href} href={item.href} className="w-fit transition hover:text-muted">
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex flex-col gap-2">
+          <p className="mb-1 font-mono text-xs uppercase tracking-[0.14em] text-muted">Built on</p>
+          <p>BNB Smart Chain</p>
+          <p>Binance Web3 API</p>
+          <p>bStocks · Ondo</p>
+        </div>
       </div>
+      <p aria-hidden className="mt-16 select-none text-[clamp(4rem,19vw,17rem)] font-semibold leading-[0.8] tracking-[-0.07em] text-card">
+        firstshare
+      </p>
     </footer>
   );
 }

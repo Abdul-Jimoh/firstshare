@@ -164,3 +164,30 @@ export async function balances(
   }
   return out;
 }
+
+export interface HeldToken {
+  address: string;
+  symbol: string;
+  amount: number;
+  priceUsd: number;
+}
+
+export async function heldTokens(client: W3Client, owner: string, maxPages = 5): Promise<HeldToken[]> {
+  const out: HeldToken[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await client.get<
+      { tokenAssets?: { tokenContractAddress: string; symbol: string; balance: string; tokenPrice: string }[] }[]
+    >("/api/v1/dex/balance/all-token-balances-by-address", { address: owner, chains: BSC, excludeRiskToken: true, page, pageSize: 100 });
+    const assets = res.flatMap((r) => r.tokenAssets ?? []);
+    for (const a of assets) {
+      out.push({
+        address: a.tokenContractAddress.toLowerCase(),
+        symbol: a.symbol,
+        amount: Number(a.balance) || 0,
+        priceUsd: Number(a.tokenPrice) || 0,
+      });
+    }
+    if (assets.length < 100) break;
+  }
+  return out;
+}
