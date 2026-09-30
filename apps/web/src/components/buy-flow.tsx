@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Hex } from "viem";
+import { erc20Abi, parseEventLogs, type Hex } from "viem";
 import { bsc } from "viem/chains";
 import { useConnection, usePublicClient, useSendTransaction, useSwitchChain } from "wagmi";
 import type { EvmTx } from "@firstshare/core";
@@ -26,7 +26,6 @@ const toRequest = (tx: EvmTx) => ({
   to: tx.to as Hex,
   data: tx.data as Hex,
   value: BigInt(tx.value || "0"),
-  ...(tx.gas ? { gas: (BigInt(tx.gas) * 12n) / 10n } : {}),
   ...(tx.gasPrice ? { gasPrice: BigInt(tx.gasPrice) } : {}),
 });
 
@@ -111,7 +110,11 @@ export function BuyFlow({
           hash,
         });
       const feeBnb = Number(receipt.gasUsed * receipt.effectiveGasPrice) / 1e18;
-      setStage({ kind: "done", order: fresh, hash, feeBnb });
+      const received = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs })
+        .filter((l) => l.address.toLowerCase() === fresh.tokenAddress && l.args.to.toLowerCase() === address!.toLowerCase())
+        .reduce((sum, l) => sum + l.args.value, 0n);
+      const shares = received > 0n ? (Number(received) / 10 ** fresh.decimals) * fresh.sharesPerToken : fresh.shares;
+      setStage({ kind: "done", order: { ...fresh, shares, perShare: fresh.amountUsd / shares }, hash, feeBnb });
     } catch (e) {
       setStage({ kind: "failed", message: walletError(e) });
     }

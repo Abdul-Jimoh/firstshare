@@ -20,6 +20,8 @@ export type Prepared =
       issuer: string;
       symbol: string;
       tokenAddress: string;
+      decimals: number;
+      sharesPerToken: number;
       shares: number;
       minShares: number | null;
       perShare: number;
@@ -92,6 +94,8 @@ export async function prepareBuy(ticker: string, amountUsd: number, wallet: stri
     issuer: ISSUER[token.platform].name,
     symbol: token.symbol,
     tokenAddress: token.address,
+    decimals: token.decimals,
+    sharesPerToken: token.sharesPerToken,
     shares,
     minShares: plan.minReceive ? (Number(plan.minReceive) / 10 ** token.decimals) * token.sharesPerToken : null,
     perShare: amountUsd / shares,
