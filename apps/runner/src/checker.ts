@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { ERC8183Client, JobStatus, buildJobDescription } from "@bnbagent/sdk/erc8183";
+import { ERC8183Client, JobStatus, buildJobDescription, resolveErc8183Network } from "@bnbagent/sdk/erc8183";
 import { USDT_BSC } from "@firstshare/core";
-import type { Hex } from "viem";
-import { AgenticWalletProvider, agenticWalletAddress } from "./agentic-wallet.ts";
+import { encodeFunctionData, erc20Abi, type Hex } from "viem";
+import { AgenticWalletProvider, agenticWalletAddress, contractCall } from "./agentic-wallet.ts";
 
 export const CHECKER = {
   agentId: 361660,
@@ -13,6 +13,10 @@ export const CHECKER = {
   clientId: "4ueislsh493rjmkdj30js6jc5n",
   scope: "bnbagent-seller/invoke",
 } as const;
+
+// The SDK default RPC (bsc-dataseed) serves receipts but refuses eth_getLogs, and publicnode is the
+// reverse, so results are read back through a separate read-only client.
+const LOGS_RPC = "https://bsc-rpc.publicnode.com";
 
 // Seller has submitDeadline = deadline - disputeWindow; 30 minutes is far more than a check needs.
 const SUBMIT_WINDOW_MINUTES = 30;
@@ -66,7 +70,54 @@ export interface PaidCheck {
   result: Record<string, unknown>;
 }
 
-export async function buyCheck(order: CheckOrder, log: (line: string) => void = () => {}): Promise<PaidCheck> {
+type Log = (line: string) => void;
+
+async function connect(log: Log) {
+  const txs: PaidCheck["txs"] = [];
+  const wallet = new AgenticWalletProvider(await agenticWalletAddress(), (label, hash) => {
+    txs.push({ label, hash });
+    log(`${label}: ${hash}`);
+  });
+  const client = await ERC8183Client.create({ walletProvider: wallet, network: "bsc-mainnet" });
+  return { wallet, client, txs };
+}
+
+// The SDK sends its own ERC-20 approval as a raw signed transaction, which the Agentic Wallet can't produce,
+// so the allowance is granted through the wallet first and fund() then skips its approval.
+async function ensureAllowance(c: Awaited<ReturnType<typeof connect>>, amount: bigint) {
+  const spender = c.client.commerce.address;
+  if ((await c.client.tokenAllowanceFor(USDT_BSC, c.wallet.address, spender)) >= amount) return;
+  const data = encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, amount] });
+  const { txHash } = await contractCall(c.wallet.address, USDT_BSC, data);
+  c.wallet.onTx("erc20.approve", txHash);
+  await c.client.publicClient.waitForTransactionReceipt({ hash: txHash });
+}
+
+async function fundAndDeliver(c: Awaited<ReturnType<typeof connect>>, jobId: bigint, price: bigint, sessionId: string, log: Log): Promise<PaidCheck> {
+  if ((await c.client.getJobStatus(jobId)) === JobStatus.OPEN) {
+    await ensureAllowance(c, price);
+    await c.client.fund(jobId, price, { approveFloor: price, expectedToken: USDT_BSC });
+    log(`job ${jobId} funded`);
+  }
+  if ((await c.client.getJobStatus(jobId)) === JobStatus.FUNDED) {
+    const ack = await a2a({ skill: "notify_funded", job_id: Number(jobId) }, sessionId);
+    log(`notify_funded: ${JSON.stringify(ack).slice(0, 200)}`);
+  }
+
+  const deadline = Date.now() + 5 * 60_000;
+  while ((await c.client.getJobStatus(jobId)) !== JobStatus.SUBMITTED) {
+    if (Date.now() > deadline) throw new Error(`job ${jobId} not submitted within 5 minutes`);
+    await new Promise((r) => setTimeout(r, 5_000));
+  }
+  const reader = await ERC8183Client.create({ network: { ...resolveErc8183Network("bsc-mainnet"), rpcUrl: LOGS_RPC } });
+  const deliverableUrl = await reader.getDeliverableUrl(jobId);
+  if (!deliverableUrl) throw new Error(`job ${jobId} submitted without a deliverable URL`);
+  const manifest = (await (await fetch(deliverableUrl)).json()) as { response?: { content?: string } };
+  const result = JSON.parse(manifest.response?.content ?? "{}") as Record<string, unknown>;
+  return { jobId: Number(jobId), priceAtomic: price, txs: c.txs, deliverableUrl, result };
+}
+
+export async function buyCheck(order: CheckOrder, log: Log = () => {}): Promise<PaidCheck> {
   const sessionId = `firstshare-runner-${randomUUID()}`;
   const quote = await a2a(
     {
@@ -82,37 +133,24 @@ export async function buyCheck(order: CheckOrder, log: (line: string) => void = 
   const price = BigInt(response.terms.price);
   log(`quote: ${price} USDT wei, negotiation ${String(quote.negotiation_hash).slice(0, 10)}…`);
 
-  const txs: PaidCheck["txs"] = [];
-  const wallet = new AgenticWalletProvider(await agenticWalletAddress(), (label, hash) => {
-    txs.push({ label, hash });
-    log(`${label}: ${hash}`);
-  });
-  const client = await ERC8183Client.create({ walletProvider: wallet, network: "bsc-mainnet" });
-  const verdict = await client.verifyNegotiationQuote(quote, { expectedProvider: CHECKER.address, expectedCurrency: USDT_BSC });
+  const c = await connect(log);
+  const verdict = await c.client.verifyNegotiationQuote(quote, { expectedProvider: CHECKER.address, expectedCurrency: USDT_BSC });
   if (!verdict.valid) throw new Error(`Checker quote signature invalid: ${JSON.stringify(verdict)}`);
 
-  const disputeWindow = Number(await client.policy.disputeWindow());
+  const disputeWindow = Number(await c.client.policy.disputeWindow());
   const expiredAt = BigInt(Math.floor(Date.now() / 1000) + disputeWindow + SUBMIT_WINDOW_MINUTES * 60);
-  const created = await client.createJobWithToken({ asset: USDT_BSC, provider: CHECKER.address, expiredAt, description: buildJobDescription(quote) });
+  const created = await c.client.createJobWithToken({ asset: USDT_BSC, provider: CHECKER.address, expiredAt, description: buildJobDescription(quote) });
   if (created.jobId === null) throw new Error(`createJob returned no job id (tx ${created.transactionHash})`);
   const jobId = created.jobId;
   log(`job ${jobId} created`);
-  await client.registerJob(jobId);
-  await client.setBudget(jobId, price);
-  await client.fund(jobId, price, { approveFloor: price, expectedToken: USDT_BSC });
-  log(`job ${jobId} funded`);
+  await c.client.registerJob(jobId);
+  await c.client.setBudget(jobId, price);
+  return fundAndDeliver(c, jobId, price, sessionId, log);
+}
 
-  const ack = await a2a({ skill: "notify_funded", job_id: Number(jobId) }, sessionId);
-  log(`notify_funded: ${JSON.stringify(ack).slice(0, 200)}`);
-
-  const deadline = Date.now() + 5 * 60_000;
-  while ((await client.getJobStatus(jobId)) !== JobStatus.SUBMITTED) {
-    if (Date.now() > deadline) throw new Error(`job ${jobId} not submitted within 5 minutes`);
-    await new Promise((r) => setTimeout(r, 5_000));
-  }
-  const deliverableUrl = await client.getDeliverableUrl(jobId);
-  if (!deliverableUrl) throw new Error(`job ${jobId} submitted without a deliverable URL`);
-  const manifest = (await (await fetch(deliverableUrl)).json()) as { response?: { content?: string } };
-  const result = JSON.parse(manifest.response?.content ?? "{}") as Record<string, unknown>;
-  return { jobId: Number(jobId), priceAtomic: price, txs, deliverableUrl, result };
+// Picks up a job this wallet already created and budgeted, e.g. after a failure part-way through.
+export async function resumeCheck(jobId: number, log: Log = () => {}): Promise<PaidCheck> {
+  const c = await connect(log);
+  const job = await c.client.getJob(BigInt(jobId));
+  return fundAndDeliver(c, BigInt(jobId), job.budget, `firstshare-runner-${randomUUID()}`, log);
 }
