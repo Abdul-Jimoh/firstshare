@@ -2,11 +2,13 @@ import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-sec
 import { generateText, type LanguageModel } from "ai";
 import { clientFromEnv, loadCatalog, runCheck, type Check, type FairPrice, type Stock } from "./core/index.ts";
 
-// Studio's runtime secret bundle only carries its own fixed keys, so the Binance and Upstash
-// credentials live in a separate secret named by FIRSTSHARE_SECRET_ID.
+// Studio's runtime secret bundle only carries its own fixed keys and its AWS deploy drops custom
+// env vars, so the Binance and Upstash credentials live in a separate secret. Locally they come from .env.local.
+const APP_SECRET_ID = "firstshare/checker/app";
+
 export async function loadAppSecrets(): Promise<void> {
-  const id = process.env.FIRSTSHARE_SECRET_ID;
-  if (!id) return;
+  if (process.env.BINANCE_W3_API_KEY) return;
+  const id = process.env.FIRSTSHARE_SECRET_ID ?? APP_SECRET_ID;
   const out = await new SecretsManagerClient({}).send(new GetSecretValueCommand({ SecretId: id }));
   for (const [k, v] of Object.entries(JSON.parse(out.SecretString ?? "{}") as Record<string, string>)) process.env[k] ??= v;
 }
