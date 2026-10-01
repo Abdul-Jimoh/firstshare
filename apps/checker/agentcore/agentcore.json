@@ -15,6 +15,10 @@
         {
           "name": "OTEL_TRACES_EXPORTER",
           "value": "none"
+        },
+        {
+          "name": "FIRSTSHARE_SECRET_ID",
+          "value": "firstshare/checker/app"
         }
       ],
       "runtimeVersion": "NODE_22"
