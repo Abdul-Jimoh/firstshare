@@ -98,7 +98,7 @@ work_timeout_seconds = 60
 [deploy]
 iam_notice_accepted_at = "2026-10-01T17:50:08Z"
 iam_notice_version = 1
-last_deploy_at = "2026-10-01T17:51:24Z"
+last_deploy_at = "2026-10-01T20:47:25Z"
 provider = "aws"
 runtime_arn = "arn:aws:bedrock-agentcore:eu-central-1:040949441028:runtime/firstsharechecker-RmW82x6XtT"
 invoke_url = "https://bedrock-agentcore.eu-central-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aeu-central-1%3A040949441028%3Aruntime%2Ffirstsharechecker-RmW82x6XtT/invocations?qualifier=DEFAULT"
