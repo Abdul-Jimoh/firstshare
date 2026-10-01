@@ -17,11 +17,24 @@
           "value": "none"
         },
         {
-          "name": "FIRSTSHARE_SECRET_ID",
-          "value": "firstshare/checker/app"
+          "name": "OAUTH_TOKEN_URL",
+          "value": "https://bnbagent-040949441028.auth.eu-central-1.amazoncognito.com/oauth2/token"
+        },
+        {
+          "name": "OAUTH_SCOPE",
+          "value": "bnbagent-seller/invoke"
         }
       ],
-      "runtimeVersion": "NODE_22"
+      "runtimeVersion": "NODE_22",
+      "authorizerType": "CUSTOM_JWT",
+      "authorizerConfiguration": {
+        "customJwtAuthorizer": {
+          "discoveryUrl": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_rPcOpdZ3b/.well-known/openid-configuration",
+          "allowedClients": [
+            "4ueislsh493rjmkdj30js6jc5n"
+          ]
+        }
+      }
     }
   ]
 }
