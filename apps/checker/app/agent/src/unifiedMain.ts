@@ -95,7 +95,7 @@ import express from "express";
 import { buildAgentCard } from "./agentCard.js";
 import { SellerAgentExecutor } from "./executor.js";
 import { buildModel } from "./model.js";
-import { checkWork } from "./firstshare.js";
+import { checkWork, loadAppSecrets } from "./firstshare.js";
 import {
   requestLimitContext,
   limitCommerceOperation as limitSellOperation,
@@ -396,6 +396,7 @@ function sendStreamingResponse(
 
 async function main(): Promise<void> {
   await loadRuntimeSecrets();
+  await loadAppSecrets();
 
   // Wallet material is NEVER bundled into the deploy artifact. `bag deploy`
   // injects it via the runtime secret channel (Secrets Manager bundle on
