@@ -44,6 +44,7 @@ export function Mark({ className = "size-7", animate = false }: { className?: st
 
 const NAV = [
   { href: "/stocks", label: "Explore" },
+  { href: "/plans", label: "Plans" },
   { href: "/#how", label: "How it works" },
   { href: "/#trust", label: "Is it safe?" },
 ];
