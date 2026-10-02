@@ -1,7 +1,14 @@
 // The always-on runner: evaluates every active plan on a fixed interval.
+import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Redis } from "@upstash/redis";
 import { clientFromEnv } from "@firstshare/core";
 import { tick } from "./tick.ts";
+
+// On the server the Binance and Upstash credentials come from Secrets Manager; locally from the root .env.
+if (process.env.RUNNER_SECRET_ID && !process.env.BINANCE_W3_API_KEY) {
+  const out = await new SecretsManagerClient({}).send(new GetSecretValueCommand({ SecretId: process.env.RUNNER_SECRET_ID }));
+  for (const [k, v] of Object.entries(JSON.parse(out.SecretString ?? "{}") as Record<string, string>)) process.env[k] ??= v;
+}
 
 const INTERVAL_MS = Number(process.env.RUNNER_INTERVAL_MS ?? 5 * 60_000);
 

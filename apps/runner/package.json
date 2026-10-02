@@ -9,6 +9,7 @@
     "start": "tsx --env-file=../../.env src/main.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1145.0",
     "@bnbagent/sdk": "0.6.0",
     "@firstshare/core": "^0.0.0",
     "@upstash/redis": "^1.39.0",
