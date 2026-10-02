@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatUsd } from "@/lib/format";
 
 export interface ChartPoint {
@@ -13,9 +13,7 @@ export interface ChartPoint {
 const WORTH = "#2f7a4e";
 const PUT_IN = "#c47a1c";
 
-const W = 640;
-const H = 260;
-const PAD = { top: 16, right: 72, bottom: 28, left: 8 };
+const PAD = { top: 16, right: 56, bottom: 28, left: 8 };
 
 const monthFmt = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
 const dayFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -27,6 +25,17 @@ function compactUsd(n: number) {
 export function BacktestChart({ points }: { points: ChartPoint[] }) {
   const svg = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
+  // Drawn at the container's real width so axis text stays legible on phones instead of being scaled down.
+  const [W, setW] = useState(640);
+  const H = W < 480 ? 220 : 260;
+
+  useEffect(() => {
+    const el = svg.current?.parentElement;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setW(Math.max(280, Math.round(entry!.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const geo = useMemo(() => {
     const t0 = points[0]!.t;
@@ -41,8 +50,8 @@ export function BacktestChart({ points }: { points: ChartPoint[] }) {
       const d = new Date(p.t);
       if (d.getUTCDate() <= 7 && (months.length === 0 || p.t - months.at(-1)!.t > 50 * 86_400_000)) months.push({ t: p.t, x: x(p.t) });
     }
-    return { x, y, worth: path("worth"), putIn: path("putIn"), ticks, months: months.filter((_, i) => i % 2 === 0) };
-  }, [points]);
+    return { x, y, worth: path("worth"), putIn: path("putIn"), ticks, months: months.filter((_, i) => i % (W < 480 ? 3 : 2) === 0) };
+  }, [points, W, H]);
 
   const last = points.at(-1)!;
   const active = hover === null ? null : points[hover]!;
