@@ -95,6 +95,11 @@ export function displayName(s: { ticker: string; name: string }) {
   return FRIENDLY[s.ticker] ?? shortName(s.name);
 }
 
+export function nameInSentence(s: { ticker: string; name: string }) {
+  const friendly = FRIENDLY[s.ticker];
+  return friendly ? `the ${friendly}` : shortName(s.name);
+}
+
 export function shortName(name: string) {
   return name.replace(/,?\s+(inc|corp|corporation|co|ltd|plc|holdings)\.?$/i, "").replace(/\.com$/i, "");
 }

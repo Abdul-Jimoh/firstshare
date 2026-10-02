@@ -1,5 +1,6 @@
 import { clientFromEnv, describeRule, priceHistory, runBacktest, type BacktestResult, type Plan, type PriceHistory } from "@firstshare/core";
 import { getStock } from "./data";
+import { nameInSentence } from "./stock";
 
 const HISTORY_TTL_MS = 60 * 60_000;
 const histories = new Map<string, { at: number; value: Promise<PriceHistory | null> }>();
@@ -31,7 +32,7 @@ export interface BacktestView {
 export async function backtestPlan(plan: Plan): Promise<BacktestView> {
   const tickers = [...new Set(plan.rules.map((r) => r.ticker))];
   const [found, stocks] = await Promise.all([Promise.all(tickers.map(historyFor)), Promise.all(tickers.map(getStock))]);
-  const name = new Map(stocks.map((s, i) => [tickers[i]!, s?.name ?? tickers[i]!]));
+  const name = new Map(stocks.map((s, i) => [tickers[i]!, s ? nameInSentence(s) : tickers[i]!]));
   const missing = tickers.filter((_, i) => !found[i]);
   if (missing.length) throw new Error(`No price history for ${missing.join(", ")}.`);
   const result = runBacktest(plan, found as PriceHistory[]);
