@@ -63,7 +63,7 @@ export function StartPlan({ plan }: { plan: Plan }) {
   return (
     <div className="flex flex-wrap items-center gap-4">
       {started ? (
-        <p className="font-medium text-gain">Started in practice mode. It shows up under Your plans below.</p>
+        <p className="font-medium text-gain">Started in practice mode. It shows up under Your plans.</p>
       ) : (
         <button onClick={start} disabled={busy} className="rounded-full bg-ink px-6 py-3 font-medium text-surface transition hover:bg-ink/85 disabled:opacity-40">
           {busy ? "Check your wallet…" : "Practise this plan"}
@@ -107,14 +107,14 @@ export function MyPlans() {
 
   if (!mounted || !isConnected) return null;
   return (
-    <section className="mt-16 max-w-3xl">
+    <section className="mt-16">
       <h2 className="text-subhead">Your plans</h2>
       {plans === null ? (
         <p className="mt-4 text-muted">Loading…</p>
       ) : plans.length === 0 ? (
         <p className="mt-4 text-muted">Nothing running yet. Read a plan above and practise it.</p>
       ) : (
-        <div className="mt-6 grid gap-4">
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {plans.map((p) => (
             <PlanCard key={p.id} saved={p} onChange={load} />
           ))}

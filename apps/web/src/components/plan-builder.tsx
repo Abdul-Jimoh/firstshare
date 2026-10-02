@@ -61,63 +61,114 @@ export function PlanBuilder() {
     }
   };
 
+  const ready = parsed?.plan && parsed.problems.length === 0 && result && !testing;
+
   return (
-    <div className="grid gap-6">
-      <section className="rounded-card border border-line bg-surface p-5 shadow-soft sm:p-6">
-        <label htmlFor="plan-text" className="text-sm font-medium">
-          Describe your plan
-        </label>
-        <textarea
-          id="plan-text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void read();
-          }}
-          rows={3}
-          maxLength={1000}
-          placeholder="e.g. Put $10 into Apple every Monday, and buy an extra $20 when it drops 5%."
-          className="mt-3 w-full resize-y rounded-2xl border border-line bg-bg px-4 py-3 text-base outline-none transition placeholder:text-muted/70 focus:border-ink/40"
-        />
-        <div className="mt-3 flex flex-wrap gap-2">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              onClick={() => {
-                setText(ex);
-                void read(ex);
-              }}
-              className="rounded-full border border-line px-3 py-1.5 text-left text-sm text-muted transition hover:border-ink/30 hover:text-ink"
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
-        <div className="mt-5 flex items-center gap-4">
-          <button
-            onClick={() => void read()}
-            disabled={reading || !text.trim()}
-            className="rounded-full bg-ink px-6 py-3 font-medium text-surface transition hover:bg-ink/85 disabled:opacity-40"
-          >
-            {reading ? "Reading your plan…" : "Read my plan"}
-          </button>
-          {error && <p className="text-sm text-loss">{error}</p>}
-        </div>
-      </section>
-
-      {parsed && <RuleCard parsed={parsed} />}
-
-      {(testing || result || testError) && (
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-6">
         <section className="rounded-card border border-line bg-surface p-5 shadow-soft sm:p-6">
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">If you had started this plan a while ago</p>
-          {testing && <p className="mt-4 text-muted">Replaying the plan on past prices…</p>}
-          {testError && <p className="mt-4 text-loss">{testError}</p>}
-          {result && !testing && <BacktestSummary result={result} />}
+          <Step n={1}>
+            <label htmlFor="plan-text">Describe your plan</label>
+          </Step>
+          <textarea
+            id="plan-text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void read();
+            }}
+            rows={3}
+            maxLength={1000}
+            placeholder="e.g. Put $10 into Apple every Monday, and buy an extra $20 when it drops 5%."
+            className="mt-3 w-full resize-y rounded-2xl border border-line bg-bg px-4 py-3 text-base outline-none transition placeholder:text-muted/70 focus:border-ink/40"
+          />
+          <p className="mt-4 text-xs text-muted">Or try one:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => {
+                  setText(ex);
+                  void read(ex);
+                }}
+                className="rounded-full border border-line px-3 py-1.5 text-left text-sm text-muted transition hover:border-ink/30 hover:text-ink"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+          <div className="mt-5 flex items-center gap-4">
+            <button
+              onClick={() => void read()}
+              disabled={reading || !text.trim()}
+              className="rounded-full bg-ink px-6 py-3 font-medium text-surface transition hover:bg-ink/85 disabled:opacity-40"
+            >
+              {reading ? "Reading your plan…" : "Read my plan"}
+            </button>
+            {error && <p className="text-sm text-loss">{error}</p>}
+          </div>
         </section>
-      )}
 
-      {parsed?.plan && parsed.problems.length === 0 && result && !testing && <StartPlan plan={parsed.plan} />}
+        {parsed && <RuleCard parsed={parsed} />}
+      </div>
+
+      <div className="grid gap-6">
+        {!parsed && !reading && <WhatHappensNext />}
+        {reading && <p className="rounded-card border border-dashed border-ink/20 p-6 text-muted">Reading your plan…</p>}
+
+        {(testing || result || testError) && (
+          <section className="rounded-card border border-line bg-surface p-5 shadow-soft sm:p-6">
+            <Step n={3}>How it would have done</Step>
+            <p className="mt-1 text-sm text-muted">If you had started this plan a while ago</p>
+            {testing && <p className="mt-4 text-muted">Replaying the plan on past prices…</p>}
+            {testError && <p className="mt-4 text-loss">{testError}</p>}
+            {result && !testing && <BacktestSummary result={result} />}
+          </section>
+        )}
+
+        {ready && (
+          <section className="rounded-card border border-line bg-surface p-5 shadow-soft sm:p-6">
+            <Step n={4}>Practise it</Step>
+            <div className="mt-4">
+              <StartPlan plan={parsed.plan!} />
+            </div>
+          </section>
+        )}
+      </div>
     </div>
+  );
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2.5 text-sm font-medium">
+      <span className="grid size-6 place-items-center rounded-full bg-ink font-mono text-xs text-surface">{n}</span>
+      {children}
+    </p>
+  );
+}
+
+function WhatHappensNext() {
+  const steps = [
+    ["Your plan", "We turn your words into a few clear rules you can check."],
+    ["How it would have done", "We replay those rules on the past year of prices, so you can see the ups and downs."],
+    ["Practise it", "Run the plan on live prices with pretend money before any real money is involved."],
+  ];
+  return (
+    <section className="rounded-card border border-dashed border-ink/20 p-5 sm:p-6">
+      <p className="text-sm font-medium">What happens next</p>
+      <ol className="mt-4 grid gap-4">
+        {steps.map(([title, body], i) => (
+          <li key={title} className="flex gap-3">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full border border-ink/30 font-mono text-xs text-muted">{i + 2}</span>
+            <div>
+              <p className="font-medium">{title}</p>
+              <p className="text-sm text-muted">{body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -127,8 +178,8 @@ function RuleCard({ parsed }: { parsed: ParsedPlan }) {
     <section className="rounded-card bg-card p-5 sm:p-6">
       {plan ? (
         <>
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted">Your plan</p>
-          <h2 className="mt-2 text-subhead">{plan.name}</h2>
+          <Step n={2}>Your plan</Step>
+          <h2 className="mt-3 text-subhead">{plan.name}</h2>
           <ol className="mt-5 grid gap-3">
             {parsed.rules.map((r, i) => (
               <li key={i} className="flex gap-3 rounded-2xl bg-surface px-4 py-3">

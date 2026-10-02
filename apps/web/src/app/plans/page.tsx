@@ -12,7 +12,7 @@ export default function PlansPage() {
         Say how you want to invest, in your own words. We turn it into clear rules, show how it would have done on past prices, and check
         every buy against the real New York price.
       </p>
-      <div className="mt-10 max-w-3xl">
+      <div className="mt-10">
         <PlanBuilder />
       </div>
       <MyPlans />
