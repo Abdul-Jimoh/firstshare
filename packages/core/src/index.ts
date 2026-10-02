@@ -7,3 +7,4 @@ export * from "./check.ts";
 export * from "./trade.ts";
 export * from "./plan.ts";
 export * from "./backtest.ts";
+export * from "./engine.ts";
