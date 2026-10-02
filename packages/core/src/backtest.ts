@@ -41,6 +41,7 @@ export interface Trade {
 export interface BacktestPoint {
   t: number;
   putIn: number;
+  takenOut: number;
   value: number;
 }
 
@@ -170,7 +171,7 @@ export function runBacktest(plan: Plan, histories: PriceHistory[], opts: { costP
       if (w.length > 120) w.splice(0, w.length - 120);
     }
     const value = tickers.reduce((sum, t) => sum + holdings.get(t)!.shares * (lastClose.get(t) ?? 0), 0);
-    points.push({ t: day, putIn, value });
+    points.push({ t: day, putIn, takenOut, value });
   }
 
   const value = points.at(-1)?.value ?? 0;
