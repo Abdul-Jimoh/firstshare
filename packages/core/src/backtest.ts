@@ -1,7 +1,8 @@
 import type { W3Client } from "./binance/client.ts";
 import { candles } from "./binance/api.ts";
 import type { Stock } from "./catalog.ts";
-import { WEEKDAYS, planTickers, type Plan, type Rule } from "./plan.ts";
+import { capAllows, commitFill, commitSkip, evaluateRule, holding, newPlanState, type Market } from "./engine.ts";
+import { planTickers, type Plan } from "./plan.ts";
 
 export interface PricePoint {
   t: number;
@@ -58,17 +59,6 @@ export interface BacktestResult {
   skippedForCap: number;
 }
 
-interface Holding {
-  shares: number;
-  cost: number;
-}
-
-const monthKey = (t: number) => new Date(t).toISOString().slice(0, 7);
-
-// Level-triggered rules (dip, below, take profit) fire once on crossing and re-arm only after the price
-// moves back past the threshold with some margin, so a stock sitting below a line doesn't buy every day.
-const REARM = { dipFraction: 0.5, belowMargin: 1.02, profitMargin: 0.98 };
-
 export function runBacktest(plan: Plan, histories: PriceHistory[], opts: { costPct?: number; from?: number } = {}): BacktestResult {
   const costPct = opts.costPct ?? 0.001;
   const byTicker = new Map(histories.map((h) => [h.ticker, h.points]));
@@ -83,95 +73,64 @@ export function runBacktest(plan: Plan, histories: PriceHistory[], opts: { costP
   const cursor = new Map(tickers.map((t) => [t, 0]));
   const lastClose = new Map<string, number>();
   const recent = new Map<string, number[]>(tickers.map((t) => [t, []]));
-  const holdings = new Map<string, Holding>(tickers.map((t) => [t, { shares: 0, cost: 0 }]));
-  const armed = plan.rules.map(() => true);
-  const spentByMonth = new Map<string, number>();
+  const state = newPlanState(plan);
   const trades: Trade[] = [];
   const points: BacktestPoint[] = [];
   let putIn = 0;
   let takenOut = 0;
   let skippedForCap = 0;
 
-  for (let day = start; day <= end; day += DAY_MS) {
-    for (const t of tickers) {
-      const pts = byTicker.get(t)!;
-      let i = cursor.get(t)!;
-      while (i < pts.length && firstDay(pts[i]!.t) <= day) {
-        lastClose.set(t, pts[i]!.close);
+  for (let t = start; t <= end; t += DAY_MS) {
+    for (const ticker of tickers) {
+      const pts = byTicker.get(ticker)!;
+      let i = cursor.get(ticker)!;
+      while (i < pts.length && firstDay(pts[i]!.t) <= t) {
+        lastClose.set(ticker, pts[i]!.close);
         i++;
       }
-      cursor.set(t, i);
-      const price = lastClose.get(t);
-      if (price !== undefined) recent.get(t)!.push(price);
+      cursor.set(ticker, i);
+      const price = lastClose.get(ticker);
+      if (price !== undefined) recent.get(ticker)!.push(price);
     }
-    const date = new Date(day);
-    const weekday = WEEKDAYS[date.getUTCDay()]!;
-
-    const buy = (rule: Extract<Rule, { amountUsd: number }>, index: number, price: number) => {
-      const month = monthKey(day);
-      const spent = spentByMonth.get(month) ?? 0;
-      if (plan.monthlyCapUsd !== null && spent + rule.amountUsd > plan.monthlyCapUsd) {
-        skippedForCap++;
-        return;
-      }
-      const shares = (rule.amountUsd * (1 - costPct)) / price;
-      const h = holdings.get(rule.ticker)!;
-      h.shares += shares;
-      h.cost += rule.amountUsd;
-      putIn += rule.amountUsd;
-      spentByMonth.set(month, spent + rule.amountUsd);
-      trades.push({ t: day, ticker: rule.ticker, side: "buy", usd: rule.amountUsd, shares, price, rule: index });
+    const day = new Date(t).toISOString().slice(0, 10);
+    const market: Market = {
+      day,
+      price: (ticker) => lastClose.get(ticker),
+      highOver: (ticker, days) => {
+        const w = recent.get(ticker)!.slice(-days);
+        return w.length ? Math.max(...w) : undefined;
+      },
     };
 
-    plan.rules.forEach((rule, index) => {
-      const price = lastClose.get(rule.ticker);
-      if (price === undefined) return;
-      switch (rule.kind) {
-        case "buy_schedule": {
-          const s = rule.schedule;
-          const due = s.every === "day" || (s.every === "week" && s.on === weekday) || (s.every === "month" && s.on === date.getUTCDate());
-          if (due) buy(rule, index, price);
-          break;
+    plan.rules.forEach((_, index) => {
+      const intent = evaluateRule(plan, index, state, market);
+      if (!intent) return;
+      const price = lastClose.get(intent.ticker)!;
+      if (intent.side === "buy") {
+        if (!capAllows(plan, state, intent.usd, day)) {
+          skippedForCap++;
+          commitSkip(plan, state, intent, day);
+          return;
         }
-        case "buy_dip": {
-          const lookback = recent.get(rule.ticker)!.slice(-rule.lookbackDays);
-          const drop = 1 - price / Math.max(...lookback);
-          if (armed[index] && drop * 100 >= rule.dropPct) {
-            buy(rule, index, price);
-            armed[index] = false;
-          } else if (!armed[index] && drop * 100 < rule.dropPct * REARM.dipFraction) armed[index] = true;
-          break;
-        }
-        case "buy_below":
-          if (armed[index] && price < rule.priceUsd) {
-            buy(rule, index, price);
-            armed[index] = false;
-          } else if (!armed[index] && price > rule.priceUsd * REARM.belowMargin) armed[index] = true;
-          break;
-        case "take_profit": {
-          const h = holdings.get(rule.ticker)!;
-          if (h.shares <= 0) break;
-          const target = (h.cost / h.shares) * (1 + rule.gainPct / 100);
-          if (armed[index] && price >= target) {
-            const shares = h.shares * (rule.sellPct / 100);
-            const usd = shares * price * (1 - costPct);
-            h.cost *= 1 - rule.sellPct / 100;
-            h.shares -= shares;
-            takenOut += usd;
-            trades.push({ t: day, ticker: rule.ticker, side: "sell", usd, shares, price, rule: index });
-            armed[index] = false;
-          } else if (!armed[index] && price < target * REARM.profitMargin) armed[index] = true;
-          break;
-        }
+        const shares = (intent.usd * (1 - costPct)) / price;
+        commitFill(plan, state, intent, { shares, usd: intent.usd }, day);
+        putIn += intent.usd;
+        trades.push({ t, ticker: intent.ticker, side: "buy", usd: intent.usd, shares, price, rule: index });
+      } else {
+        const shares = holding(state, intent.ticker).shares * intent.fraction;
+        const usd = shares * price * (1 - costPct);
+        commitFill(plan, state, intent, { shares, usd }, day);
+        takenOut += usd;
+        trades.push({ t, ticker: intent.ticker, side: "sell", usd, shares, price, rule: index });
       }
     });
 
-    for (const t of tickers) {
-      const w = recent.get(t)!;
+    for (const ticker of tickers) {
+      const w = recent.get(ticker)!;
       if (w.length > 120) w.splice(0, w.length - 120);
     }
-    const value = tickers.reduce((sum, t) => sum + holdings.get(t)!.shares * (lastClose.get(t) ?? 0), 0);
-    points.push({ t: day, putIn, takenOut, value });
+    const value = tickers.reduce((sum, ticker) => sum + holding(state, ticker).shares * (lastClose.get(ticker) ?? 0), 0);
+    points.push({ t, putIn, takenOut, value });
   }
 
   const value = points.at(-1)?.value ?? 0;
