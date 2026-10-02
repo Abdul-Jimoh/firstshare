@@ -6,6 +6,7 @@ import type { BacktestView } from "@/lib/plan";
 import type { ParsedPlan } from "@/lib/plan-parse";
 import { formatUsd } from "@/lib/format";
 import { BacktestChart } from "./backtest-chart";
+import { StartPlan } from "./my-plans";
 
 const EXAMPLES = [
   "Put $10 into Apple every Monday.",
@@ -114,6 +115,8 @@ export function PlanBuilder() {
           {result && !testing && <BacktestSummary result={result} />}
         </section>
       )}
+
+      {parsed?.plan && parsed.problems.length === 0 && result && !testing && <StartPlan plan={parsed.plan} />}
     </div>
   );
 }

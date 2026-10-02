@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { PlanError, addEvent, createSavedPlan, ownerPlans, planEvents, savePlan, validatePlan, type Plan, type PlanMode } from "@firstshare/core";
+import { PlanError, addEvent, createSavedPlan, describeRule, nameInSentence, ownerPlans, planEvents, savePlan, validatePlan, type Plan, type PlanMode } from "@firstshare/core";
 import { isAddress } from "viem";
 import { getCatalog } from "@/lib/data";
 import { kv } from "@/lib/kv";
@@ -22,8 +22,9 @@ export async function POST(request: Request) {
   if (!body?.plan || !body.owner || !body.issuedAt || !body.signature) return Response.json({ error: "Sign the plan with your wallet first." }, { status: 400 });
   const mode = body.mode ?? "paper";
   if (!MODES.includes(mode)) return Response.json({ error: "Only practice mode is available for now." }, { status: 400 });
+  const catalog = await getCatalog();
   try {
-    validatePlan(body.plan, new Set((await getCatalog()).map((s) => s.ticker)));
+    validatePlan(body.plan, new Set(catalog.map((s) => s.ticker)));
   } catch (e) {
     if (e instanceof PlanError) return Response.json({ error: e.problems.join(" ") }, { status: 422 });
     throw e;
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
   if (existing.filter((p) => p.status === "active").length >= MAX_PLANS_PER_WALLET) {
     return Response.json({ error: `You can run up to ${MAX_PLANS_PER_WALLET} plans at once. Pause one first.` }, { status: 409 });
   }
-  const saved = createSavedPlan(randomUUID(), body.owner, body.plan, mode);
+  const byTicker = new Map(catalog.map((s) => [s.ticker, s]));
+  const ruleText = body.plan.rules.map((r) => describeRule(r, (t) => (byTicker.has(t) ? nameInSentence(byTicker.get(t)!) : t)));
+  const saved = createSavedPlan(randomUUID(), body.owner, body.plan, ruleText, mode);
   await savePlan(kv(), saved);
   await addEvent(kv(), saved.id, { t: Date.now(), kind: "note", rule: -1, ticker: "", text: "Plan started in practice mode. No real money moves." });
   return Response.json({ plan: saved }, { status: 201 });
