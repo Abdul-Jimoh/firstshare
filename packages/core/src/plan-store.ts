@@ -20,6 +20,7 @@ export interface SavedPlan {
   id: string;
   owner: string;
   plan: Plan;
+  ruleText: string[];
   mode: PlanMode;
   status: "active" | "paused";
   createdAt: number;
@@ -55,8 +56,8 @@ const keys = {
   active: "plans:active",
 };
 
-export function createSavedPlan(id: string, owner: string, plan: Plan, mode: PlanMode, now = Date.now()): SavedPlan {
-  return { id, owner: owner.toLowerCase(), plan, mode, status: "active", createdAt: now, updatedAt: now, state: newPlanState(plan), waiting: {} };
+export function createSavedPlan(id: string, owner: string, plan: Plan, ruleText: string[], mode: PlanMode, now = Date.now()): SavedPlan {
+  return { id, owner: owner.toLowerCase(), plan, ruleText, mode, status: "active", createdAt: now, updatedAt: now, state: newPlanState(plan), waiting: {} };
 }
 
 export async function savePlan(kv: KV, saved: SavedPlan): Promise<void> {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MyPlans } from "@/components/my-plans";
 import { PlanBuilder } from "@/components/plan-builder";
 
 export const metadata: Metadata = { title: "Plans · Firstshare" };
@@ -14,6 +15,7 @@ export default function PlansPage() {
       <div className="mt-10 max-w-3xl">
         <PlanBuilder />
       </div>
+      <MyPlans />
     </div>
   );
 }
