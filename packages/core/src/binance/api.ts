@@ -50,6 +50,22 @@ export function quote(client: W3Client, p: QuoteParams) {
   });
 }
 
+export type CandleBar = "1d" | "1w" | "1h";
+
+export interface Candle {
+  t: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+// Rows come back ascending as [open, high, low, close, volume, timeMs, confirmed]; limit tops out at 300.
+export async function candles(client: W3Client, tokenContractAddress: string, bar: CandleBar = "1d", limit = 300): Promise<Candle[]> {
+  const rows = await client.get<number[][]>("/api/v1/dex/market/candles", { binanceChainId: BSC, tokenContractAddress, bar, limit: String(limit) });
+  return rows.map(([open, high, low, close, , t]) => ({ t: t!, open: open!, high: high!, low: low!, close: close! }));
+}
+
 export async function publicRwaListings(platformId: PlatformId, fetchImpl: typeof fetch = fetch): Promise<PublicRwaListing[]> {
   const res = await fetchImpl(`${PUBLIC_RWA_LIST_URL}?type=${PUBLIC_TYPE[platformId]}`, {
     headers: { "Accept-Encoding": "identity" },
