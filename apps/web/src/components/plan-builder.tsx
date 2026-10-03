@@ -128,7 +128,7 @@ export function PlanBuilder() {
 
         {ready && (
           <section className="rounded-card border border-line bg-surface p-5 shadow-soft sm:p-6">
-            <Step n={4}>Practise it</Step>
+            <Step n={4}>Start it</Step>
             <div className="mt-4">
               <StartPlan plan={parsed.plan!} />
             </div>
@@ -152,7 +152,7 @@ function WhatHappensNext() {
   const steps = [
     ["Your plan", "We turn your words into a few clear rules you can check."],
     ["How it would have done", "We replay those rules on the past year of prices, so you can see the ups and downs."],
-    ["Practise it", "Run the plan on live prices with pretend money before any real money is involved."],
+    ["Start it", "Practise with pretend money, approve each buy yourself, or let it run automatically."],
   ];
   return (
     <section className="rounded-card border border-dashed border-ink/20 p-5 sm:p-6">

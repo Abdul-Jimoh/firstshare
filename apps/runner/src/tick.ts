@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import {
+  THRESHOLDS,
+  USDT_BSC,
   addEvent,
   activePlans,
   capAllows,
@@ -19,11 +22,15 @@ import {
   type Intent,
   type KV,
   type Market,
+  type PlanEvent,
   type PriceHistory,
   type SavedPlan,
   type Stock,
   type W3Client,
 } from "@firstshare/core";
+import { agenticWalletAddress } from "./agentic-wallet.ts";
+import { CHECKER, buyCheck } from "./checker.ts";
+import { agenticQuote, agenticSwap } from "./execute.ts";
 
 const PRICE_PROBE_USD = 10;
 // Paper sells are filled at the quoted price minus roughly the issuer's cost, as the backtest does.
@@ -83,9 +90,10 @@ export async function tick({ kv, client, now = new Date(), log = () => {} }: Tic
     return checks.get(key)!;
   };
 
+  const agentic = plans.some((p) => p.mode === "auto") ? ((await agenticWalletAddress().catch(() => null))?.toLowerCase() ?? null) : null;
   for (const saved of plans) {
     try {
-      await runPlan(saved, { kv, client, byTicker, day, check, log });
+      await runPlan(saved, { agentic, kv, client, byTicker, day, check, log });
       await savePlan(kv, saved);
     } catch (e) {
       log(`plan ${saved.id} failed: ${(e as Error).stack ?? e}`);
@@ -94,6 +102,7 @@ export async function tick({ kv, client, now = new Date(), log = () => {} }: Tic
 }
 
 interface PlanCtx {
+  agentic: string | null;
   kv: KV;
   client: W3Client;
   byTicker: Map<string, Stock>;
@@ -131,70 +140,183 @@ async function runPlan(saved: SavedPlan, ctx: PlanCtx): Promise<void> {
   };
   const event = (e: Parameters<typeof addEvent>[2]) => addEvent(ctx.kv, saved.id, e);
 
+  saved.waiting ??= {};
+  saved.pending ??= {};
+  saved.executor ??= null;
+  saved.heldToken ??= {};
+
   for (let index = 0; index < plan.rules.length; index++) {
+    const open = saved.pending[index];
+    if (open && open.day !== ctx.day && plan.rules[index]!.kind === "buy_schedule") {
+      delete saved.pending[index];
+      commitSkip(plan, state, { rule: index, ticker: open.ticker, side: "buy", usd: open.usd }, open.day);
+      await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: index, ticker: open.ticker, usd: open.usd, text: "Skipped: it wasn't approved the same day." });
+    }
     const intent = evaluateRule(plan, index, state, market);
     if (!intent) {
       delete saved.waiting[index];
       continue;
     }
+    if (saved.pending[index]) continue;
     const stock = ctx.byTicker.get(intent.ticker)!;
     const rule = describeRule(plan.rules[index]!, name);
+    const step: Step = { saved, ctx, intent, stock, rule };
     if (intent.side === "sell") {
-      await paperSell(saved, intent, prices.get(intent.ticker)!, rule, event, ctx.day);
+      if (saved.mode === "paper") await paperSell(step, prices.get(intent.ticker)!);
+      else if (saved.mode === "ask") await askApproval(step, null, `Time to sell: you're up enough on ${name(intent.ticker)}. (${rule})`);
+      else await autoSell(step);
       continue;
     }
     if (!capAllows(plan, state, intent.usd, ctx.day)) {
       commitSkip(plan, state, intent, ctx.day);
-      await event({ t: Date.now(), kind: "skipped", rule: index, ticker: intent.ticker, usd: intent.usd, text: `Skipped: it would go over the monthly limit. (${rule})` });
+      await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: index, ticker: intent.ticker, usd: intent.usd, text: `Skipped: it would go over the monthly limit. (${rule})` });
       continue;
     }
+    // The free in-process check runs first in every mode; the paid Checker is only bought once it says yes.
     const c = await ctx.check(stock, intent.usd);
     if (!c || !BUYABLE.has(c.verdict) || !c.shares || perShare(c) === undefined) {
-      const reason = c ? `${c.verdict}: ${c.headline}` : "price check failed";
-      if (saved.waiting[index] !== reason) {
-        saved.waiting[index] = reason;
-        await event({
-          t: Date.now(),
-          kind: "waiting",
-          rule: index,
-          ticker: intent.ticker,
-          usd: intent.usd,
-          fairPrice: c?.fair?.perShare ?? null,
-          verdict: c?.verdict ?? "unavailable",
-          text: `Waiting for a fair price. ${c?.headline ?? "The price couldn't be checked."}`,
-        });
-        ctx.log(`${saved.id} rule ${index} waiting: ${reason}`);
-      }
+      await waitFor(step, c ? `${c.verdict}: ${c.headline}` : "price check failed", {
+        fairPrice: c?.fair?.perShare ?? null,
+        verdict: c?.verdict ?? "unavailable",
+        text: `Waiting for a fair price. ${c?.headline ?? "The price couldn't be checked."}`,
+      });
       continue;
     }
     delete saved.waiting[index];
-    commitFill(plan, state, intent, { shares: c.shares, usd: intent.usd }, ctx.day);
-    await event({
-      t: Date.now(),
-      kind: "bought",
-      rule: index,
-      ticker: intent.ticker,
-      usd: intent.usd,
-      shares: c.shares,
-      price: perShare(c)!,
-      fairPrice: c.fair?.perShare ?? null,
-      verdict: c.verdict,
-      text: `Practice buy: ${c.headline}`,
-    });
-    ctx.log(`${saved.id} rule ${index} paper buy $${intent.usd} ${intent.ticker} @ ${perShare(c)!.toFixed(2)}`);
+    if (saved.mode === "paper") await paperBuy(step, c);
+    else if (saved.mode === "ask") await askApproval(step, c.pick?.token.address ?? null, `Ready to buy: ${c.headline} Approve it to buy from your wallet.`);
+    else await autoBuy(step);
   }
 }
 
-async function paperSell(
-  saved: SavedPlan,
-  intent: Extract<Intent, { side: "sell" }>,
-  price: number,
-  rule: string,
-  event: (e: Parameters<typeof addEvent>[2]) => Promise<void>,
-  day: string,
-) {
+interface Step {
+  saved: SavedPlan;
+  ctx: PlanCtx;
+  intent: Intent;
+  stock: Stock;
+  rule: string;
+}
+
+async function waitFor({ saved, ctx, intent }: Step, reason: string, extra: Partial<PlanEvent> & { text: string }) {
+  if (saved.waiting[intent.rule] === reason) return;
+  saved.waiting[intent.rule] = reason;
+  await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "waiting", rule: intent.rule, ticker: intent.ticker, ...(intent.side === "buy" ? { usd: intent.usd } : {}), ...extra });
+  ctx.log(`${saved.id} rule ${intent.rule} waiting: ${reason}`);
+}
+
+async function paperBuy({ saved, ctx, intent }: Step, c: Check) {
+  if (intent.side !== "buy") return;
+  commitFill(saved.plan, saved.state, intent, { shares: c.shares!, usd: intent.usd }, ctx.day);
+  await addEvent(ctx.kv, saved.id, {
+    t: Date.now(),
+    kind: "bought",
+    rule: intent.rule,
+    ticker: intent.ticker,
+    usd: intent.usd,
+    shares: c.shares!,
+    price: perShare(c)!,
+    fairPrice: c.fair?.perShare ?? null,
+    verdict: c.verdict,
+    text: `Practice buy: ${c.headline}`,
+  });
+  ctx.log(`${saved.id} rule ${intent.rule} paper buy $${intent.usd} ${intent.ticker} @ ${perShare(c)!.toFixed(2)}`);
+}
+
+async function paperSell({ saved, ctx, intent, rule }: Step, price: number) {
+  if (intent.side !== "sell") return;
   const shares = holding(saved.state, intent.ticker).shares * intent.fraction;
   const usd = shares * price * (1 - SELL_COST);
-  commitFill(saved.plan, saved.state, intent, { shares, usd }, day);
-  await event({ t: Date.now(), kind: "sold", rule: intent.rule, ticker: intent.ticker, usd, shares, price, text: `Practice sell. (${rule})` });
+  commitFill(saved.plan, saved.state, intent, { shares, usd }, ctx.day);
+  await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "sold", rule: intent.rule, ticker: intent.ticker, usd, shares, price, text: `Practice sell. (${rule})` });
+}
+
+async function askApproval({ saved, ctx, intent }: Step, token: string | null, text: string) {
+  saved.pending[intent.rule] = {
+    id: randomUUID(),
+    rule: intent.rule,
+    ticker: intent.ticker,
+    side: intent.side,
+    usd: intent.side === "buy" ? intent.usd : 0,
+    ...(intent.side === "sell" ? { fraction: intent.fraction } : {}),
+    token,
+    day: ctx.day,
+    createdAt: Date.now(),
+    headline: text,
+  };
+  await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "pending", rule: intent.rule, ticker: intent.ticker, ...(intent.side === "buy" ? { usd: intent.usd } : {}), text });
+  ctx.log(`${saved.id} rule ${intent.rule} pending approval`);
+}
+
+// Real money. Any failure after the Checker is paid uses up this firing (skip the day, or disarm until the price
+// recovers) so a broken swap can't keep paying for checks every few minutes.
+async function autoBuy(step: Step) {
+  const { saved, ctx, intent, stock } = step;
+  if (intent.side !== "buy") return;
+  if (!ctx.agentic || saved.executor !== ctx.agentic) {
+    await waitFor(step, "no agentic wallet", { kind: "error", text: "Can't buy: the Agentic Wallet for this plan isn't signed in on the runner." });
+    return;
+  }
+  try {
+    const paid = await buyCheck({ ticker: intent.ticker, amountUsd: intent.usd }, ctx.log);
+    const r = paid.result as { verdict?: string; headline?: string; pick?: { token: string; perShare: number } | null; fairPricePerShare?: { usd: number } | null };
+    if (!r.verdict || !BUYABLE.has(r.verdict) || !r.pick) {
+      commitSkip(saved.plan, saved.state, intent, ctx.day);
+      await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, verdict: r.verdict ?? "unavailable", checkJob: paid.jobId, text: `Skipped: the Checker said ${r.headline ?? "the price couldn't be confirmed."}` });
+      return;
+    }
+    const token = stock.tokens.find((t) => t.address.toLowerCase() === r.pick!.token.toLowerCase());
+    if (!token) throw new Error(`Checker picked an unknown token ${r.pick.token}`);
+    const quoted = await agenticQuote(USDT_BSC, token.address, intent.usd);
+    const quotedPerShare = intent.usd / (quoted * token.sharesPerToken);
+    const fair = r.fairPricePerShare?.usd ?? null;
+    if (fair && quotedPerShare > fair * (1 + THRESHOLDS.fair)) {
+      commitSkip(saved.plan, saved.state, intent, ctx.day);
+      await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, fairPrice: fair, checkJob: paid.jobId, text: `Skipped: the wallet's own quote ($${quotedPerShare.toFixed(2)} a share) was above New York's $${fair.toFixed(2)}.` });
+      return;
+    }
+    const fill = await agenticSwap(USDT_BSC, token.address, intent.usd, ctx.log);
+    const tokens = Number.isFinite(fill.received) && fill.received > 0 ? fill.received : quoted;
+    const shares = tokens * token.sharesPerToken;
+    commitFill(saved.plan, saved.state, intent, { shares, usd: intent.usd }, ctx.day);
+    saved.heldToken[intent.ticker] = token.address;
+    await addEvent(ctx.kv, saved.id, {
+      t: Date.now(),
+      kind: "bought",
+      rule: intent.rule,
+      ticker: intent.ticker,
+      usd: intent.usd,
+      shares,
+      price: intent.usd / shares,
+      fairPrice: fair,
+      verdict: r.verdict,
+      checkJob: paid.jobId,
+      ...(fill.txHash ? { tx: fill.txHash } : {}),
+      text: `Bought ${token.symbol} through the Agentic Wallet after the Firstshare Checker (agent #${CHECKER.agentId}) confirmed ${r.headline}`,
+    });
+    ctx.log(`${saved.id} rule ${intent.rule} REAL buy $${intent.usd} ${token.symbol} order ${fill.orderId} tx ${fill.txHash}`);
+  } catch (e) {
+    commitSkip(saved.plan, saved.state, intent, ctx.day);
+    await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "error", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, text: `Couldn't buy: ${(e as Error).message.slice(0, 200)}` });
+    ctx.log(`${saved.id} rule ${intent.rule} auto buy failed: ${(e as Error).stack ?? e}`);
+  }
+}
+
+async function autoSell(step: Step) {
+  const { saved, ctx, intent, stock, rule } = step;
+  if (intent.side !== "sell") return;
+  const token = stock.tokens.find((t) => t.address.toLowerCase() === saved.heldToken[intent.ticker]?.toLowerCase());
+  if (!ctx.agentic || saved.executor !== ctx.agentic || !token) {
+    await waitFor(step, "can't sell", { kind: "error", text: "Can't sell: the Agentic Wallet isn't signed in on the runner, or it doesn't hold this stock." });
+    return;
+  }
+  try {
+    const shares = holding(saved.state, intent.ticker).shares * intent.fraction;
+    const fill = await agenticSwap(token.address, USDT_BSC, shares / token.sharesPerToken, ctx.log);
+    const usd = Number.isFinite(fill.received) ? fill.received : 0;
+    commitFill(saved.plan, saved.state, intent, { shares, usd }, ctx.day);
+    await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "sold", rule: intent.rule, ticker: intent.ticker, usd, shares, ...(fill.txHash ? { tx: fill.txHash } : {}), text: `Sold through the Agentic Wallet. (${rule})` });
+  } catch (e) {
+    commitSkip(saved.plan, saved.state, intent, ctx.day);
+    await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "error", rule: intent.rule, ticker: intent.ticker, text: `Couldn't sell: ${(e as Error).message.slice(0, 200)}` });
+  }
 }

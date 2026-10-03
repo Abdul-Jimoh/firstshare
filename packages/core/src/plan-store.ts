@@ -28,6 +28,25 @@ export interface SavedPlan {
   state: PlanState;
   // Rules currently held back by the price check, so a waiting buy is logged once rather than every tick.
   waiting: Record<number, string>;
+  // "Ask me first": checked buys waiting for the owner to approve and place them from their own wallet.
+  pending: Record<number, PendingAction>;
+  // "Run it for me": the Binance Agentic Wallet that pays the Checker and places the orders.
+  executor: string | null;
+  // Which issuer's token an automatic plan bought, so a take-profit sells the same one.
+  heldToken: Record<string, string>;
+}
+
+export interface PendingAction {
+  id: string;
+  rule: number;
+  ticker: string;
+  side: "buy" | "sell";
+  usd: number;
+  fraction?: number;
+  token: string | null;
+  day: string;
+  createdAt: number;
+  headline: string;
 }
 
 export type PlanEventKind = "bought" | "sold" | "skipped" | "waiting" | "pending" | "error" | "note";
@@ -56,8 +75,30 @@ const keys = {
   active: "plans:active",
 };
 
-export function createSavedPlan(id: string, owner: string, plan: Plan, ruleText: string[], mode: PlanMode, now = Date.now()): SavedPlan {
-  return { id, owner: owner.toLowerCase(), plan, ruleText, mode, status: "active", createdAt: now, updatedAt: now, state: newPlanState(plan), waiting: {} };
+export function createSavedPlan(
+  id: string,
+  owner: string,
+  plan: Plan,
+  ruleText: string[],
+  mode: PlanMode,
+  executor: string | null = null,
+  now = Date.now(),
+): SavedPlan {
+  return {
+    id,
+    owner: owner.toLowerCase(),
+    plan,
+    ruleText,
+    mode,
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+    state: newPlanState(plan),
+    waiting: {},
+    pending: {},
+    executor: executor?.toLowerCase() ?? null,
+    heldToken: {},
+  };
 }
 
 export async function savePlan(kv: KV, saved: SavedPlan): Promise<void> {
