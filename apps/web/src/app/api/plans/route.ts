@@ -7,8 +7,10 @@ import { verifyAction, type Signed } from "@/lib/plan-server";
 
 const MAX_PLANS_PER_WALLET = 5;
 const MODES: PlanMode[] = ["paper", "ask", "auto"];
-// "Run it for me" trades through the one Agentic Wallet signed in on the runner.
+// "Run it for me" trades through the one Agentic Wallet signed in on the runner, so only the wallets of the
+// person who owns it may start such a plan; everyone else can practise or approve their own buys.
 const RUNNER_AGENTIC_WALLET = process.env.NEXT_PUBLIC_RUNNER_AGENTIC_WALLET?.toLowerCase() ?? null;
+const RUNNER_OPERATORS = new Set((process.env.RUNNER_OPERATORS ?? "").toLowerCase().split(",").map((a) => a.trim()).filter(Boolean));
 
 const START_TEXT: Record<PlanMode, string> = {
   paper: "Plan started in practice mode. No real money moves.",
@@ -31,6 +33,12 @@ export async function POST(request: Request) {
   if (!MODES.includes(mode)) return Response.json({ error: "Pick practice, ask me first, or run it for me." }, { status: 400 });
   const executor = mode === "auto" ? RUNNER_AGENTIC_WALLET : null;
   if (mode === "auto" && !executor) return Response.json({ error: "Run it for me isn't set up on this server yet." }, { status: 503 });
+  if (mode === "auto" && !RUNNER_OPERATORS.has(body.owner.toLowerCase())) {
+    return Response.json(
+      { error: "Run it for me uses the Agentic Wallet of whoever runs this Firstshare runner. To trade with your own, run the runner with your Agentic Wallet." },
+      { status: 403 },
+    );
+  }
   const catalog = await getCatalog();
   try {
     validatePlan(body.plan, new Set(catalog.map((s) => s.ticker)));
