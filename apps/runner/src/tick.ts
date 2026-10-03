@@ -64,9 +64,13 @@ export interface TickDeps {
 
 // One pass over every active plan. A fresh check per ticker supplies the price the rules see, so a plan reacts
 // to what a buyer would actually pay on-chain, the same series the backtest replays.
-export async function tick({ kv, client, now = new Date(), log = () => {} }: TickDeps): Promise<void> {
-  const plans = await activePlans(kv);
-  if (!plans.length) return;
+export async function tick(deps: TickDeps): Promise<void> {
+  const plans = await activePlans(deps.kv);
+  if (plans.length) await tickPlans(plans, deps);
+}
+
+// Runs the given plans once and saves them back; tick() feeds it every active plan.
+export async function tickPlans(plans: SavedPlan[], { kv, client, now = new Date(), log = () => {} }: TickDeps): Promise<void> {
   const stocks = await getCatalog(client);
   const byTicker = new Map(stocks.map((s) => [s.ticker, s]));
   const day = now.toISOString().slice(0, 10);

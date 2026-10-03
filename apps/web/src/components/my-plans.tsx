@@ -57,7 +57,7 @@ const MODES: { mode: PlanMode; title: string; body: string; button: string; done
   {
     mode: "auto",
     title: "Run it for me",
-    body: "Real money. Our Checker agent confirms the price, then the Binance Agentic Wallet buys automatically.",
+    body: "Real money. Our Checker agent confirms the price, then a Binance Agentic Wallet buys automatically. On this site it's limited to the wallet that runs Firstshare's runner; run your own runner to use yours.",
     button: "Start with real money",
     done: "Started. Checked buys go through automatically.",
   },
