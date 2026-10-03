@@ -1,3 +1,4 @@
+export { displayName, nameInSentence, shortName } from "@firstshare/core";
 import type { Stock, StockToken } from "@firstshare/core";
 
 export const COLLECTIONS = [
@@ -83,18 +84,5 @@ export function summarize(stock: Stock): StockSummary {
   };
 }
 
-const FRIENDLY: Record<string, string> = {
-  SPY: "S&P 500 fund",
-  QQQ: "Nasdaq 100 fund",
-  GLD: "gold fund",
-  SLV: "silver fund",
-  IBIT: "Bitcoin fund",
-};
 
-export function displayName(s: { ticker: string; name: string }) {
-  return FRIENDLY[s.ticker] ?? shortName(s.name);
-}
 
-export function shortName(name: string) {
-  return name.replace(/,?\s+(inc|corp|corporation|co|ltd|plc|holdings)\.?$/i, "").replace(/\.com$/i, "");
-}

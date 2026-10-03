@@ -1,0 +1,23 @@
+{
+  "name": "@firstshare/runner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "buy-check": "tsx --env-file=../../.env src/buy-check.ts",
+    "start": "tsx --env-file=../../.env src/main.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1145.0",
+    "@bnbagent/sdk": "0.6.0",
+    "@firstshare/core": "^0.0.0",
+    "@upstash/redis": "^1.39.0",
+    "viem": "^2.56.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

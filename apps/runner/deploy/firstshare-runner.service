@@ -1,0 +1,16 @@
+[Unit]
+Description=Firstshare plan runner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=runner
+WorkingDirectory=/opt/firstshare/apps/runner
+Environment=AWS_REGION=eu-central-1
+Environment=RUNNER_SECRET_ID=firstshare/checker/app
+ExecStart=/opt/firstshare/node_modules/.bin/tsx src/main.ts
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
