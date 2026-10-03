@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useConnection, useSignMessage } from "wagmi";
-import type { Plan, PlanEvent, SavedPlan } from "@firstshare/core";
+import type { PendingAction, Plan, PlanEvent, PlanMode, SavedPlan } from "@firstshare/core";
 import { actionMessage, type PlanAction } from "@/lib/plan-auth";
 import { formatShares, formatUsd } from "@/lib/format";
+import { BuyFlow } from "./buy-flow";
 import { Modal, WalletList } from "./wallet";
 
 const CHANGED = "firstshare:plans-changed";
@@ -36,22 +37,51 @@ async function send(url: string, method: string, body: unknown) {
   return data;
 }
 
+const RUNNER_WALLET = process.env.NEXT_PUBLIC_RUNNER_AGENTIC_WALLET ?? null;
+
+const MODES: { mode: PlanMode; title: string; body: string; button: string; done: string }[] = [
+  {
+    mode: "paper",
+    title: "Practice",
+    body: "Runs on live prices with pretend money. Nothing is ever sent.",
+    button: "Start practising",
+    done: "Started in practice mode.",
+  },
+  {
+    mode: "ask",
+    title: "Ask me first",
+    body: "When a buy is due and the price is fair, it waits here. You approve it and buy from your own wallet.",
+    button: "Start, and ask me first",
+    done: "Started. Buys will wait for your approval.",
+  },
+  {
+    mode: "auto",
+    title: "Run it for me",
+    body: "Real money. Our Checker agent confirms the price, then the Binance Agentic Wallet buys automatically.",
+    button: "Start with real money",
+    done: "Started. Checked buys go through automatically.",
+  },
+];
+
 export function StartPlan({ plan }: { plan: Plan }) {
   const { isConnected } = useConnection();
   const sign = useSignedAction();
+  const [mode, setMode] = useState<PlanMode>("paper");
   const [connecting, setConnecting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState<PlanMode | null>(null);
+  const chosen = MODES.find((m) => m.mode === mode)!;
 
   const start = async () => {
     if (!isConnected) return setConnecting(true);
     setBusy(true);
     setError(null);
     try {
-      const signed = await sign({ kind: "start", plan, mode: "paper" });
-      await send("/api/plans", "POST", { plan, mode: "paper", ...signed });
-      setStarted(true);
+      const executor = mode === "auto" ? RUNNER_WALLET : null;
+      const signed = await sign({ kind: "start", plan, mode, executor });
+      await send("/api/plans", "POST", { plan, mode, ...signed });
+      setStarted(mode);
       window.dispatchEvent(new Event(CHANGED));
     } catch (e) {
       setError(walletError(e));
@@ -60,19 +90,47 @@ export function StartPlan({ plan }: { plan: Plan }) {
     }
   };
 
+  if (started) return <p className="font-medium text-gain">{MODES.find((m) => m.mode === started)!.done} It shows up under Your plans.</p>;
+
   return (
-    <div className="flex flex-wrap items-center gap-4">
-      {started ? (
-        <p className="font-medium text-gain">Started in practice mode. It shows up under Your plans.</p>
-      ) : (
-        <button onClick={start} disabled={busy} className="rounded-full bg-ink px-6 py-3 font-medium text-surface transition hover:bg-ink/85 disabled:opacity-40">
-          {busy ? "Check your wallet…" : "Practise this plan"}
-        </button>
+    <div className="grid gap-4">
+      <div role="radiogroup" aria-label="How should this plan run?" className="grid gap-2">
+        {MODES.map((m) => {
+          const unavailable = m.mode === "auto" && !RUNNER_WALLET;
+          return (
+            <button
+              key={m.mode}
+              role="radio"
+              aria-checked={mode === m.mode}
+              disabled={unavailable}
+              onClick={() => setMode(m.mode)}
+              className={`rounded-2xl border px-4 py-3 text-left transition disabled:opacity-40 ${mode === m.mode ? "border-ink bg-bg" : "border-line hover:border-ink/30"}`}
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <span className={`size-3 rounded-full border ${mode === m.mode ? "border-[4px] border-ink" : "border-ink/40"}`} />
+                {m.title}
+                {m.mode === "auto" && <span className="rounded-full bg-accent/25 px-2 py-0.5 text-xs font-normal">real money</span>}
+              </span>
+              <span className="mt-1 block pl-5 text-sm text-muted">{unavailable ? "Not set up on this server yet." : m.body}</span>
+            </button>
+          );
+        })}
+      </div>
+      {mode === "auto" && RUNNER_WALLET && (
+        <p className="rounded-2xl bg-accent/15 px-4 py-3 text-sm">
+          Buys use the Agentic Wallet <span className="font-mono">{RUNNER_WALLET.slice(0, 6)}…{RUNNER_WALLET.slice(-4)}</span>. Each one pays the Checker
+          agent 0.01 USDT first, and only goes ahead if both it and the wallet&rsquo;s own quote are close to the New York price.
+        </p>
       )}
-      {!started && <p className="text-sm text-muted">Runs on live prices with pretend money. You sign once to show it&rsquo;s yours; nothing is sent.</p>}
-      {error && <p className="w-full text-sm text-loss">{error}</p>}
+      <div className="flex flex-wrap items-center gap-4">
+        <button onClick={start} disabled={busy} className="rounded-full bg-ink px-6 py-3 font-medium text-surface transition hover:bg-ink/85 disabled:opacity-40">
+          {busy ? "Check your wallet…" : chosen.button}
+        </button>
+        <p className="text-sm text-muted">You sign once to show the plan is yours. Signing sends nothing.</p>
+      </div>
+      {error && <p className="text-sm text-loss">{error}</p>}
       <Modal open={connecting} onClose={() => setConnecting(false)} title="Connect a wallet" center>
-        <p className="mb-5 text-muted">Your plans are saved to your wallet address. Practice mode never moves any money.</p>
+        <p className="mb-5 text-muted">Your plans are saved to your wallet address.</p>
         <WalletList onConnected={() => setConnecting(false)} />
       </Modal>
     </div>
@@ -124,6 +182,66 @@ export function MyPlans() {
   );
 }
 
+const MODE_NAME: Record<PlanMode, string> = { paper: "Practice", ask: "Ask me first", auto: "Run it for me" };
+
+function PendingBuy({ saved, pending, onChange }: { saved: PlanWithEvents; pending: PendingAction; onChange: () => void }) {
+  const sign = useSignedAction();
+  const [buying, setBuying] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const recorded = async (txHash: string) => {
+    try {
+      await send(`/api/plans/${saved.id}/fill`, "POST", { actionId: pending.id, txHash });
+      onChange();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  const skip = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const signed = await sign({ kind: "dismiss", id: saved.id, actionId: pending.id });
+      await send(`/api/plans/${saved.id}`, "PATCH", { action: "dismiss", actionId: pending.id, ...signed });
+      onChange();
+    } catch (e) {
+      setError(walletError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 rounded-2xl border border-ink/20 bg-bg p-4">
+      <p className="text-sm font-medium">Waiting for you</p>
+      <p className="mt-1 text-sm">{pending.headline}</p>
+      {pending.side === "buy" ? (
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => setBuying(true)} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition hover:bg-ink/85">
+            Buy {formatUsd(pending.usd)} of {pending.ticker} now
+          </button>
+          <button onClick={skip} disabled={busy} className="rounded-full border border-line px-4 py-2 text-sm transition hover:border-ink/30 disabled:opacity-40">
+            Skip this one
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted">Sell from your wallet when you&rsquo;re ready; Firstshare doesn&rsquo;t sell for you in this mode.</p>
+          <button onClick={skip} disabled={busy} className="rounded-full border border-line px-4 py-2 text-sm transition hover:border-ink/30 disabled:opacity-40">
+            Done
+          </button>
+        </div>
+      )}
+      {error && <p className="mt-2 text-sm text-loss">{error}</p>}
+      {buying && (
+        <BuyFlow ticker={pending.ticker} name={pending.ticker} amountUsd={pending.usd} open={buying} onClose={() => setBuying(false)} onBought={(hash) => void recorded(hash)} />
+      )}
+    </div>
+  );
+}
+
 const timeFmt = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 const EVENT_STYLE: Record<PlanEvent["kind"], { mark: string; tone: string }> = {
@@ -163,7 +281,7 @@ function PlanCard({ saved, onChange }: { saved: PlanWithEvents; onChange: () => 
         <div>
           <h3 className="text-xl font-semibold tracking-tight">{saved.plan.name}</h3>
           <p className="mt-1 text-sm text-muted">
-            Practice · {saved.status === "active" ? "running" : "paused"} · started {timeFmt.format(saved.createdAt)}
+            {MODE_NAME[saved.mode]} · {saved.status === "active" ? "running" : "paused"} · started {timeFmt.format(saved.createdAt)}
           </p>
         </div>
         <div className="flex gap-2 text-sm">
@@ -184,8 +302,11 @@ function PlanCard({ saved, onChange }: { saved: PlanWithEvents; onChange: () => 
           </li>
         ))}
       </ol>
+      {Object.values(saved.pending ?? {}).map((p) => (
+        <PendingBuy key={p.id} saved={saved} pending={p} onChange={onChange} />
+      ))}
       <p className="mt-4 text-sm">
-        Practice money put in: <strong>{formatUsd(putIn)}</strong>
+        {saved.mode === "paper" ? "Practice money put in" : "Put in"}: <strong>{formatUsd(putIn)}</strong>
         {holdings.length > 0 && <> · holding {holdings.map(([t, h]) => `${formatShares(h.shares)} ${t}`).join(", ")}</>}
       </p>
       {saved.events.length > 0 && (
@@ -195,7 +316,17 @@ function PlanCard({ saved, onChange }: { saved: PlanWithEvents; onChange: () => 
               <span aria-hidden className={`w-3 shrink-0 ${EVENT_STYLE[e.kind].tone}`}>
                 {EVENT_STYLE[e.kind].mark}
               </span>
-              <span className="min-w-0 flex-1">{e.text}</span>
+              <span className="min-w-0 flex-1">
+                {e.text}
+                {e.tx && (
+                  <>
+                    {" "}
+                    <a href={`https://bscscan.com/tx/${e.tx}`} target="_blank" rel="noreferrer" className="underline decoration-ink/30 underline-offset-2 hover:decoration-ink">
+                      View transaction
+                    </a>
+                  </>
+                )}
+              </span>
               <span className="shrink-0 text-muted">{timeFmt.format(e.t)}</span>
             </li>
           ))}

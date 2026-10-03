@@ -41,12 +41,14 @@ export function BuyFlow({
   amountUsd,
   open,
   onClose,
+  onBought,
 }: {
   ticker: string;
   name: string;
   amountUsd: number;
   open: boolean;
   onClose: () => void;
+  onBought?: (hash: Hex) => void;
 }) {
   const { address, chainId, isConnected } = useConnection();
   const { switchChain, isPending: switching } = useSwitchChain();
@@ -115,6 +117,7 @@ export function BuyFlow({
         .reduce((sum, l) => sum + l.args.value, 0n);
       const shares = received > 0n ? (Number(received) / 10 ** fresh.decimals) * fresh.sharesPerToken : fresh.shares;
       setStage({ kind: "done", order: { ...fresh, shares, perShare: fresh.amountUsd / shares }, hash, feeBnb });
+      onBought?.(hash);
     } catch (e) {
       setStage({ kind: "failed", message: walletError(e) });
     }
