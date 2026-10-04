@@ -1,4 +1,4 @@
-import { BawError, baw, pick } from "./agentic-wallet.ts";
+import { BawError, baw } from "./agentic-wallet.ts";
 
 export interface AgenticFill {
   orderId: string;
@@ -17,23 +17,38 @@ export async function agenticQuote(fromToken: string, toToken: string, qty: numb
   return tokens;
 }
 
-// The order is placed on Binance's side; its final state (and the on-chain hash) arrives through `market-order list`.
+interface MarketOrder {
+  orderId: string;
+  fromToken: string;
+  toToken: string;
+  fromTokenQty: string;
+  toTokenActualQty?: string;
+  status: string;
+  txHash?: string;
+  bookTime?: string;
+}
+
+// `market-order swap` prints its 20-digit order id after a round trip through a JS number, so the id it returns
+// is often not the real one and `list --orderId` finds nothing. The order is found by pair, size and time instead.
+async function findOrder(fromToken: string, toToken: string, qty: number, since: number): Promise<MarketOrder | null> {
+  const res = await baw(["market-order", "list", "--binanceChainId", "56", "--fromToken", fromToken, "--toToken", toToken, "--startTime", String(since), "--pageSize", "20"]);
+  const orders = (res.list as MarketOrder[] | undefined) ?? [];
+  return orders.find((o) => Math.abs(Number(o.fromTokenQty) - qty) <= qty * 1e-6) ?? null;
+}
+
 export async function agenticSwap(fromToken: string, toToken: string, qty: number, log: (line: string) => void = () => {}): Promise<AgenticFill> {
+  const since = Date.now() - 60_000;
   const placed = await baw(["market-order", "swap", "--binanceChainId", "56", "--fromTokenQty", String(qty), "--fromToken", fromToken, "--toToken", toToken, "--slippage", "1"]);
-  const orderId = pick(placed, ["orderId", "order_id", "id"]) ?? String(placed.orderId ?? "");
-  if (!orderId) throw new BawError("market-order swap returned no order id", placed);
-  log(`agentic order ${orderId} placed: ${JSON.stringify(placed).slice(0, 300)}`);
+  log(`agentic order placed: ${JSON.stringify(placed).slice(0, 200)}`);
   const deadline = Date.now() + ORDER_TIMEOUT_MS;
   for (;;) {
-    const res = await baw(["market-order", "list", "--orderId", orderId]);
-    const order = ((res.list as Record<string, unknown>[] | undefined)?.[0] ?? res) as Record<string, unknown>;
-    const status = String(order.status ?? order.orderStatus ?? "").toUpperCase();
-    if (status === "FINISHED" || status === "SUCCESS") {
-      const received = Number(order.toTokenQty ?? order.toCoinAmount ?? order.toTokenAmount ?? order.receivedQty ?? NaN);
-      return { orderId, txHash: pick(order, ["txHash", "transactionHash", "hash", "txId"]) ?? null, sent: qty, received, raw: order };
-    }
-    if (status === "FAILED" || status === "CANCELLED" || status === "CANCELED") throw new BawError(`Agentic Wallet order ${orderId} ${status.toLowerCase()}`, order);
-    if (Date.now() > deadline) throw new BawError(`Agentic Wallet order ${orderId} still ${status || "pending"} after 3 minutes`, order);
     await new Promise((r) => setTimeout(r, 5_000));
+    const order = await findOrder(fromToken, toToken, qty, since);
+    const status = order?.status.toUpperCase() ?? "NOT LISTED YET";
+    if (order && status === "FINISHED") {
+      return { orderId: order.orderId, txHash: order.txHash ?? null, sent: qty, received: Number(order.toTokenActualQty), raw: order as unknown as Record<string, unknown> };
+    }
+    if (order && status === "FAILED") throw new BawError(`Agentic Wallet order ${order.orderId} failed`, order);
+    if (Date.now() > deadline) throw new BawError(`Agentic Wallet order still ${status.toLowerCase()} after 3 minutes`, order ?? placed);
   }
 }
