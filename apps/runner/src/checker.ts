@@ -18,8 +18,9 @@ export const CHECKER = {
 // reverse, so results are read back through a separate read-only client.
 const LOGS_RPC = "https://bsc-rpc.publicnode.com";
 
-// Seller has submitDeadline = deadline - disputeWindow; 30 minutes is far more than a check needs.
-const SUBMIT_WINDOW_MINUTES = 30;
+// expiredAt = now + disputeWindow + this. The seller must submit before expiredAt - disputeWindow, and the job can
+// only be settled from submittedAt + disputeWindow, so this is also the time left to settle before the job expires.
+const SUBMIT_WINDOW_MINUTES = 24 * 60;
 
 async function accessToken(): Promise<string> {
   const secret = process.env.CHECKER_CLIENT_SECRET;
@@ -72,7 +73,7 @@ export interface PaidCheck {
 
 type Log = (line: string) => void;
 
-async function connect(log: Log) {
+export async function connect(log: Log = () => {}) {
   const txs: PaidCheck["txs"] = [];
   const wallet = new AgenticWalletProvider(await agenticWalletAddress(), (label, hash) => {
     txs.push({ label, hash });

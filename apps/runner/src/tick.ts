@@ -31,6 +31,7 @@ import {
 import { agenticWalletAddress } from "./agentic-wallet.ts";
 import { CHECKER, buyCheck, resumeCheck } from "./checker.ts";
 import { agenticQuote, agenticSwap } from "./execute.ts";
+import { rememberJob, settleDueJobs } from "./settle.ts";
 
 const PRICE_PROBE_USD = 10;
 // Paper sells are filled at the quoted price minus roughly the issuer's cost, as the backtest does.
@@ -67,6 +68,7 @@ export interface TickDeps {
 export async function tick(deps: TickDeps): Promise<void> {
   const plans = await activePlans(deps.kv);
   if (plans.length) await tickPlans(plans, deps);
+  if (await agenticWalletAddress().catch(() => null)) await settleDueJobs(deps.kv, deps.log ?? (() => {})).catch((e) => deps.log?.(`settle pass failed: ${e}`));
 }
 
 // Runs the given plans once and saves them back; tick() feeds it every active plan.
@@ -269,6 +271,7 @@ async function autoBuy(step: Step) {
       : await buyCheck({ ticker: intent.ticker, amountUsd: intent.usd }, ctx.log, async (jobId) => {
           saved.checkJobs[intent.rule] = { jobId, day: ctx.day, attempts: 0 };
           await savePlan(ctx.kv, saved);
+          await rememberJob(ctx.kv, jobId);
         });
     const r = paid.result as { verdict?: string; headline?: string; pick?: { token: string; perShare: number } | null; fairPricePerShare?: { usd: number } | null };
     if (!r.verdict || !BUYABLE.has(r.verdict) || !r.pick) {
