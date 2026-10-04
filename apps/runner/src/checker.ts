@@ -110,14 +110,19 @@ async function fundAndDeliver(c: Awaited<ReturnType<typeof connect>>, jobId: big
     await new Promise((r) => setTimeout(r, 5_000));
   }
   const reader = await ERC8183Client.create({ network: { ...resolveErc8183Network("bsc-mainnet"), rpcUrl: LOGS_RPC } });
-  const deliverableUrl = await reader.getDeliverableUrl(jobId);
-  if (!deliverableUrl) throw new Error(`job ${jobId} submitted without a deliverable URL`);
+  // The log RPC can trail the one that reported SUBMITTED by a few blocks and rejects ranges past its head.
+  let deliverableUrl: string | null = null;
+  for (let attempt = 0; attempt < 18 && !deliverableUrl; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 5_000));
+    deliverableUrl = await reader.getDeliverableUrl(jobId).catch(() => null);
+  }
+  if (!deliverableUrl) throw new Error(`job ${jobId} submitted but its result couldn't be read yet`);
   const manifest = (await (await fetch(deliverableUrl)).json()) as { response?: { content?: string } };
   const result = JSON.parse(manifest.response?.content ?? "{}") as Record<string, unknown>;
   return { jobId: Number(jobId), priceAtomic: price, txs: c.txs, deliverableUrl, result };
 }
 
-export async function buyCheck(order: CheckOrder, log: Log = () => {}): Promise<PaidCheck> {
+export async function buyCheck(order: CheckOrder, log: Log = () => {}, onJob: (jobId: number) => Promise<void> = async () => {}): Promise<PaidCheck> {
   const sessionId = `firstshare-runner-${randomUUID()}`;
   const quote = await a2a(
     {
@@ -143,6 +148,7 @@ export async function buyCheck(order: CheckOrder, log: Log = () => {}): Promise<
   if (created.jobId === null) throw new Error(`createJob returned no job id (tx ${created.transactionHash})`);
   const jobId = created.jobId;
   log(`job ${jobId} created`);
+  await onJob(Number(jobId));
   await c.client.registerJob(jobId);
   await c.client.setBudget(jobId, price);
   return fundAndDeliver(c, jobId, price, sessionId, log);

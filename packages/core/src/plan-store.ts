@@ -34,6 +34,8 @@ export interface SavedPlan {
   executor: string | null;
   // Which issuer's token an automatic plan bought, so a take-profit sells the same one.
   heldToken: Record<string, string>;
+  // Paid Checker jobs per rule for the current firing, so a retry reuses the job instead of paying again.
+  checkJobs: Record<number, { jobId: number; day: string; attempts: number }>;
 }
 
 export interface PendingAction {
@@ -98,6 +100,7 @@ export function createSavedPlan(
     pending: {},
     executor: executor?.toLowerCase() ?? null,
     heldToken: {},
+    checkJobs: {},
   };
 }
 

@@ -29,7 +29,7 @@ import {
   type W3Client,
 } from "@firstshare/core";
 import { agenticWalletAddress } from "./agentic-wallet.ts";
-import { CHECKER, buyCheck } from "./checker.ts";
+import { CHECKER, buyCheck, resumeCheck } from "./checker.ts";
 import { agenticQuote, agenticSwap } from "./execute.ts";
 
 const PRICE_PROBE_USD = 10;
@@ -148,6 +148,7 @@ async function runPlan(saved: SavedPlan, ctx: PlanCtx): Promise<void> {
   saved.pending ??= {};
   saved.executor ??= null;
   saved.heldToken ??= {};
+  saved.checkJobs ??= {};
 
   for (let index = 0; index < plan.rules.length; index++) {
     const open = saved.pending[index];
@@ -251,8 +252,9 @@ async function askApproval({ saved, ctx, intent }: Step, token: string | null, t
   ctx.log(`${saved.id} rule ${intent.rule} pending approval`);
 }
 
-// Real money. Any failure after the Checker is paid uses up this firing (skip the day, or disarm until the price
-// recovers) so a broken swap can't keep paying for checks every few minutes.
+// Real money. The Checker job is recorded the moment it exists, so a failure later in the run is retried against
+// the same paid job instead of paying again; after a few failed retries the firing is used up.
+const MAX_ATTEMPTS = 3;
 async function autoBuy(step: Step) {
   const { saved, ctx, intent, stock } = step;
   if (intent.side !== "buy") return;
@@ -260,10 +262,17 @@ async function autoBuy(step: Step) {
     await waitFor(step, "no agentic wallet", { kind: "error", text: "Can't buy: the Agentic Wallet for this plan isn't signed in on the runner." });
     return;
   }
+  const open = saved.checkJobs[intent.rule]?.day === ctx.day ? saved.checkJobs[intent.rule] : undefined;
   try {
-    const paid = await buyCheck({ ticker: intent.ticker, amountUsd: intent.usd }, ctx.log);
+    const paid = open
+      ? await resumeCheck(open.jobId, ctx.log)
+      : await buyCheck({ ticker: intent.ticker, amountUsd: intent.usd }, ctx.log, async (jobId) => {
+          saved.checkJobs[intent.rule] = { jobId, day: ctx.day, attempts: 0 };
+          await savePlan(ctx.kv, saved);
+        });
     const r = paid.result as { verdict?: string; headline?: string; pick?: { token: string; perShare: number } | null; fairPricePerShare?: { usd: number } | null };
     if (!r.verdict || !BUYABLE.has(r.verdict) || !r.pick) {
+      delete saved.checkJobs[intent.rule];
       commitSkip(saved.plan, saved.state, intent, ctx.day);
       await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, verdict: r.verdict ?? "unavailable", checkJob: paid.jobId, text: `Skipped: the Checker said ${r.headline ?? "the price couldn't be confirmed."}` });
       return;
@@ -274,6 +283,7 @@ async function autoBuy(step: Step) {
     const quotedPerShare = intent.usd / (quoted * token.sharesPerToken);
     const fair = r.fairPricePerShare?.usd ?? null;
     if (fair && quotedPerShare > fair * (1 + THRESHOLDS.fair)) {
+      delete saved.checkJobs[intent.rule];
       commitSkip(saved.plan, saved.state, intent, ctx.day);
       await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "skipped", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, fairPrice: fair, checkJob: paid.jobId, text: `Skipped: the wallet's own quote ($${quotedPerShare.toFixed(2)} a share) was above New York's $${fair.toFixed(2)}.` });
       return;
@@ -283,6 +293,7 @@ async function autoBuy(step: Step) {
     const shares = tokens * token.sharesPerToken;
     commitFill(saved.plan, saved.state, intent, { shares, usd: intent.usd }, ctx.day);
     saved.heldToken[intent.ticker] = token.address;
+    delete saved.checkJobs[intent.rule];
     await addEvent(ctx.kv, saved.id, {
       t: Date.now(),
       kind: "bought",
@@ -299,8 +310,20 @@ async function autoBuy(step: Step) {
     });
     ctx.log(`${saved.id} rule ${intent.rule} REAL buy $${intent.usd} ${token.symbol} order ${fill.orderId} tx ${fill.txHash}`);
   } catch (e) {
-    commitSkip(saved.plan, saved.state, intent, ctx.day);
-    await addEvent(ctx.kv, saved.id, { t: Date.now(), kind: "error", rule: intent.rule, ticker: intent.ticker, usd: intent.usd, text: `Couldn't buy: ${(e as Error).message.slice(0, 200)}` });
+    const job = saved.checkJobs[intent.rule];
+    const retry = job && job.day === ctx.day && ++job.attempts < MAX_ATTEMPTS;
+    if (!retry) {
+      delete saved.checkJobs[intent.rule];
+      commitSkip(saved.plan, saved.state, intent, ctx.day);
+    }
+    await addEvent(ctx.kv, saved.id, {
+      t: Date.now(),
+      kind: "error",
+      rule: intent.rule,
+      ticker: intent.ticker,
+      usd: intent.usd,
+      text: `${retry ? "Retrying shortly with the same paid check" : "Couldn't buy"}: ${(e as Error).message.slice(0, 200)}`,
+    });
     ctx.log(`${saved.id} rule ${intent.rule} auto buy failed: ${(e as Error).stack ?? e}`);
   }
 }
