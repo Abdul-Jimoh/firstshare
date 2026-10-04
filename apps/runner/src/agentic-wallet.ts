@@ -15,7 +15,7 @@ export class BawError extends Error {
   }
 }
 
-async function baw(args: string[]): Promise<Record<string, unknown>> {
+export async function baw(args: string[]): Promise<Record<string, unknown>> {
   let stdout: string;
   try {
     ({ stdout } = await run("baw", [...args, "--json"], { maxBuffer: 4 << 20 }));
@@ -28,7 +28,7 @@ async function baw(args: string[]): Promise<Record<string, unknown>> {
   return out.data ?? {};
 }
 
-function pick(data: Record<string, unknown>, keys: string[]): string | undefined {
+export function pick(data: Record<string, unknown>, keys: string[]): string | undefined {
   for (const k of keys) {
     const v = data[k];
     if (typeof v === "string" && v) return v;

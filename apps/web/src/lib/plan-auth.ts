@@ -1,8 +1,17 @@
 import type { Plan, PlanMode } from "@firstshare/core";
 
-export type PlanAction = { kind: "start"; plan: Plan; mode: PlanMode } | { kind: "pause" | "resume" | "delete"; id: string };
+export type PlanAction =
+  | { kind: "start"; plan: Plan; mode: PlanMode; executor: string | null }
+  | { kind: "pause" | "resume" | "delete"; id: string }
+  | { kind: "dismiss"; id: string; actionId: string };
 
-const VERB = { start: "Start", pause: "Pause", resume: "Resume", delete: "Delete" } as const;
+const VERB = { start: "Start", pause: "Pause", resume: "Resume", delete: "Delete", dismiss: "Skip a buy in" } as const;
+
+export const MODE_LABEL: Record<PlanMode, string> = {
+  paper: "practice (no real money)",
+  ask: "ask me first (I approve every trade)",
+  auto: "run it for me (real money through my Agentic Wallet)",
+};
 
 async function fingerprint(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(value));
@@ -15,7 +24,14 @@ async function fingerprint(value: unknown): Promise<string> {
 export async function actionMessage(action: PlanAction, owner: string, issuedAt: string): Promise<string> {
   const what =
     action.kind === "start"
-      ? [`Plan: ${action.plan.name}`, `Mode: ${action.mode === "paper" ? "practice (no real money)" : action.mode}`, `Fingerprint: ${await fingerprint(action.plan)}`]
-      : [`Plan ID: ${action.id}`];
+      ? [
+          `Plan: ${action.plan.name}`,
+          `Mode: ${MODE_LABEL[action.mode]}`,
+          ...(action.executor ? [`Agentic Wallet: ${action.executor.toLowerCase()}`] : []),
+          `Fingerprint: ${await fingerprint(action.plan)}`,
+        ]
+      : action.kind === "dismiss"
+        ? [`Plan ID: ${action.id}`, `Buy: ${action.actionId}`]
+        : [`Plan ID: ${action.id}`];
   return [`Firstshare: ${VERB[action.kind]} a plan`, "", ...what, `Wallet: ${owner.toLowerCase()}`, `Issued: ${issuedAt}`].join("\n");
 }
