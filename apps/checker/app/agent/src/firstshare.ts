@@ -105,7 +105,7 @@ function summary(c: Check) {
   };
 }
 
-const EXPLAIN_TIMEOUT_MS = 30_000;
+const EXPLAIN_TIMEOUT_MS = 50_000;
 
 // Pieverse's free model is a reasoning model and returns its thinking inline before the answer.
 function answerOnly(text: string): string {
@@ -119,9 +119,10 @@ async function explain(model: LanguageModel, facts: ReturnType<typeof summary>, 
     const { text } = await generateText({
       model,
       system:
-        "You explain a pre-trade price check to someone buying their first stock. " +
-        "Two or three short sentences, plain English, no jargon, no advice to buy or sell. " +
-        "Use only the facts given. Say whether the price is close to the real New York price and why.",
+        "You explain a pre-trade price check to someone buying their first stock, in exactly two short sentences of plain English. " +
+        "Sentence one: what they would pay per share and how that compares with the real New York price, using the numbers in the headline. " +
+        "Sentence two: what the verdict means for them: good or fair means the price is in line with New York; pricey or avoid means they would overpay and waiting may get a better price. " +
+        "Use only the facts given. Do not explain why prices differ, do not predict prices, and do not tell them to buy or sell.",
       prompt: JSON.stringify(facts),
       abortSignal: signal,
     });

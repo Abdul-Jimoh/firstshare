@@ -161,7 +161,10 @@ export function assess(input: {
     headline = `${paying}. We can't compare it with New York right now, so we can't vouch for the price.`;
   } else if (premium <= THRESHOLDS.good) {
     verdict = "good";
-    headline = `${paying}, ${premium <= 0 ? `${pct(premium)} below` : `${pct(premium)} above`} New York's ${usd(fair!.perShare)}.`;
+    headline =
+      Math.abs(premium) < 0.00005
+        ? `${paying}, the same as New York's ${usd(fair!.perShare)}.`
+        : `${paying}, ${premium <= 0 ? `${pct(premium)} below` : `${pct(premium)} above`} New York's ${usd(fair!.perShare)}.`;
   } else if (premium <= THRESHOLDS.fair) {
     verdict = "fair";
     headline = `${paying}, ${pct(premium)} above New York's ${usd(fair!.perShare)}.`;
