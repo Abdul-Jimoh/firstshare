@@ -9,3 +9,7 @@ dist/
 research/
 *.tsbuildinfo
 next-env.d.ts
+
+# Local assistant notes, kept out of the repo
+CLAUDE.md
+AGENTS.md

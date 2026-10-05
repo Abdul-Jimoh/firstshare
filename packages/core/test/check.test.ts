@@ -53,6 +53,11 @@ describe("assess", () => {
     expect(c.notes.join(" ")).toMatch(/other version would cost 0\.9% more/);
   });
 
+  it("says the same price instead of 0.00% when the gap rounds away", () => {
+    const c = assess({ stock, amountUsd: 10, options: [option(token("bstock"), 231.2401)], fair: fair(231.2417), now: MONDAY_OPEN });
+    expect(c.headline).toBe("You'd pay $231.24 a share, the same as New York's $231.24.");
+  });
+
   it("warns off the weekend SPYon trap and says why", () => {
     const c = assess({
       stock,
