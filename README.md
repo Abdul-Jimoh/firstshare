@@ -2,6 +2,8 @@
 
 **Your first US stock, from $1, on BNB Smart Chain.** Firstshare takes people who have never owned a stock to their first share of any of 470+ US companies and funds, from Apple and Nvidia to the S&P 500, as a tokenized stock held in their own wallet. It explains what they're buying, refuses to let them overpay when New York is closed, and runs plain-English investing plans for them.
 
+Firstshare never holds anyone's money: buys come straight from the investor's own wallet, and no contract or server of ours can move their funds.
+
 - **Live:** https://firstshare.site
 - **Demo video:** _(link added at submission)_
 - Built for **BNB Hack: Tokenized Stocks Edition** on BSC mainnet, using the **Binance Web3 API**, **BNB Agent Studio** and the **Binance Agentic Wallet**.
