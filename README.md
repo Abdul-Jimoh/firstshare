@@ -5,7 +5,7 @@
 Firstshare never holds anyone's money: buys come straight from the investor's own wallet, and no contract or server of ours can move their funds.
 
 - **Live:** https://firstshare.site
-- **Demo video:** _(link added at submission)_
+- **Demo video:** https://youtu.be/MP1cbdk6wSU
 - Built for **BNB Hack: Tokenized Stocks Edition** on BSC mainnet, using the **Binance Web3 API**, **BNB Agent Studio** and the **Binance Agentic Wallet**.
 
 ## What it does
