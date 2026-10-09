@@ -58,6 +58,7 @@ Everything below is on BSC mainnet.
 | Agentic Wallet used by the runner | [`0xcA5A…68d2`](https://bscscan.com/address/0xcA5A60e133C9650ea391Be41983879a0bA2E68d2) |
 | Unattended buy #1 (Sun 4 Oct, NY closed), after paid check job 56893 | [`0x429b8e2c…2e7e`](https://bscscan.com/tx/0x429b8e2c67f57fe9ed80851d123db55a9d843579b29033274cc67e5169542e7e) |
 | Unattended buy #2 (Mon 5 Oct 00:03 UTC, NY closed), after paid check job 56906 | [`0x77612572…0cc6`](https://bscscan.com/tx/0x776125721517ac64f32d52bdf52c26e9d028affd3c9a94c0a3da16b23ab30cc6) |
+| Checker paid from escrow after the dispute window, settled by the runner | job 56869 [`0x58c3a6a1…5d50`](https://bscscan.com/tx/0x58c3a6a1e9a1733b3ab15faa892410b64f9d8ad862637e4aa08734f36ab65d50), job 56870 [`0xa74e231d…b3cf`](https://bscscan.com/tx/0xa74e231d74312cf1923f5cb43b0d61ec954d3a9545dd2119951220286b57b3cf) |
 | Each Checker result | stored at a content-addressed URL; its hash is the job's on-chain `deliverable` |
 
 ## Run it locally
