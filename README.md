@@ -6,7 +6,8 @@ Firstshare never holds anyone's money: buys come straight from the investor's ow
 
 - **Live:** https://firstshare.site
 - **Demo video:** https://youtu.be/MP1cbdk6wSU
-- Built for **BNB Hack: Tokenized Stocks Edition** on BSC mainnet, using the **Binance Web3 API**, **BNB Agent Studio** and the **Binance Agentic Wallet**.
+- 🏆 **5th place** and **Best Use of BNB Agent Studio** at [BNB Hack: Tokenized Stocks Edition](https://www.bnbchain.org/en/blog/meet-the-winners-of-bnb-hack-tokenized-stocks-edition-with-binance-web3-wallet).
+- Built on BSC mainnet, using the **Binance Web3 API**, **BNB Agent Studio** and the **Binance Agentic Wallet**.
 
 ## What it does
 
